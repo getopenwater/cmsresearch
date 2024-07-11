@@ -51,6 +51,13 @@ public class DeleteView
 
             _db.Views.Remove(entity);
             _db.Routes.Remove(entity.Route);
+
+            var webTemplatesMapping = await _db.ThemeWebTemplatesMappings
+                .Where(wtm => wtm.ViewId == entity.Id)
+                .ToListAsync(cancellationToken);
+
+            _db.ThemeWebTemplatesMappings.RemoveRange(webTemplatesMapping);
+
             await _db.SaveChangesAsync(cancellationToken);
 
             return new CommandResponseDto<ShortGuid>(entity.Id);

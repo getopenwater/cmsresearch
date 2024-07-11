@@ -99,7 +99,12 @@
     color: #495057 !important;
     text-decoration: none !important;
     background-color: #f8f9fa !important;
-    cursor: pointer!important;
+    cursor: pointer !important;
+}
+
+.raytha-border-top {
+    border-top: 0.0625rem solid #9CA3AF;
+    border-color: #e9ecef #e9ecef #dee2e6;
 }
 
 input[readonly] {

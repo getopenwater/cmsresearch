@@ -1,9 +1,9 @@
 ﻿using CSharpVitamins;
 using Raytha.Application.Common.Models;
 using Raytha.Application.ContentTypes;
-using Raytha.Application.Templates.Web;
 using Raytha.Domain.Entities;
 using System.Linq.Expressions;
+using Raytha.Application.Themes.WebTemplates;
 
 namespace Raytha.Application.Views
 {

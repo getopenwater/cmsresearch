@@ -16,7 +16,8 @@ using Raytha.Application.ContentItems;
 using Raytha.Application.ContentItems.Commands;
 using Raytha.Application.ContentItems.Queries;
 using Raytha.Application.ContentTypes.Queries;
-using Raytha.Application.Templates.Web.Queries;
+using Raytha.Application.Themes.Queries;
+using Raytha.Application.Themes.WebTemplates.Queries;
 using Raytha.Application.Views;
 using Raytha.Domain.Entities;
 using Raytha.Domain.ValueObjects;
@@ -71,8 +72,10 @@ public class ContentItemsController : BaseController
     [Route($"{RAYTHA_ROUTE_PREFIX}/{{{RouteConstants.CONTENT_TYPE_DEVELOPER_NAME}}}/create", Name = "contentitemscreate")]
     public async Task<IActionResult> Create()
     {
+        var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
         var webTemplates = await Mediator.Send(new GetWebTemplates.Query
         {
+            ThemeId = themeResponse.Result.Id,
             ContentTypeId = CurrentView.ContentTypeId,
             PageSize = int.MaxValue
         });
@@ -132,8 +135,10 @@ public class ContentItemsController : BaseController
         {
             SetErrorMessage("There was an error attempting to save this page. See the error below.", response.GetErrors());
 
+            var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
             var webTemplates = await Mediator.Send(new GetWebTemplates.Query
             {
+                ThemeId = themeResponse.Result.Id,
                 ContentTypeId = CurrentView.ContentTypeId,
                 PageSize = int.MaxValue
             });
@@ -423,8 +428,10 @@ public class ContentItemsController : BaseController
     {
         var response = await Mediator.Send(new GetContentItemById.Query { Id = id });
 
+        var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
         var webTemplates = await Mediator.Send(new GetWebTemplates.Query
         {
+            ThemeId = themeResponse.Result.Id,
             ContentTypeId = CurrentView.ContentTypeId,
             PageSize = int.MaxValue
         });
@@ -465,11 +472,15 @@ public class ContentItemsController : BaseController
         {
             SetErrorMessage("There was an error attempting to save this page. See the error below.", editResponse.GetErrors());
 
-            var response = await Mediator.Send(new GetContentItemById.Query { Id = id });
+            var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
+            var webTemplatesResponse = await Mediator.Send(new GetWebTemplates.Query
+            {
+                ThemeId = themeResponse.Result.Id,
+                ContentTypeId = CurrentView.ContentTypeId,
+                PageSize = int.MaxValue,
+            });
 
-            var webTemplates = await Mediator.Send(new GetWebTemplates.Query { ContentTypeId = CurrentView.ContentTypeId, PageSize = int.MaxValue });
-
-            model.AvailableTemplates = webTemplates.Result?.Items.ToDictionary(p => p.Id.ToString(), p => p.Label);
+            model.AvailableTemplates = webTemplatesResponse.Result?.Items.ToDictionary(p => p.Id.ToString(), p => p.Label);
             model.WebsiteUrl = CurrentOrganization.WebsiteUrl.TrimEnd('/') + CurrentOrganization.PathBase + "/";
             return View(model);
         }

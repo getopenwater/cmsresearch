@@ -15,11 +15,11 @@ using System;
 using System.Text.Json;
 using System.Net;
 using Raytha.Domain.ValueObjects.FieldTypes;
-using Raytha.Application.Templates.Web.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Raytha.Application.Common.Utils;
-using Azure;
 using Raytha.Web.Utils;
+using Raytha.Application.Themes.Queries;
+using Raytha.Application.Themes.WebTemplates.Queries;
 
 namespace Raytha.Web.Areas.Admin.Controllers;
 
@@ -167,7 +167,13 @@ public class ViewsController : BaseController
     public async Task<IActionResult> PublicSettings()
     {
         var response = await Mediator.Send(new GetViewById.Query { Id = CurrentView.Id });
-        var webTemplates = await Mediator.Send(new GetWebTemplates.Query { ContentTypeId = CurrentView.ContentTypeId, PageSize = int.MaxValue });
+        var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
+        var webTemplates = await Mediator.Send(new GetWebTemplates.Query
+        {
+            ThemeId = themeResponse.Result.Id,
+            ContentTypeId = CurrentView.ContentTypeId,
+            PageSize = int.MaxValue,
+        });
 
         var viewModel = new ViewsPublicSettings_ViewModel
         {
@@ -213,8 +219,16 @@ public class ViewsController : BaseController
         else
         {
             SetErrorMessage("There were validation errors with your form submission. Please correct the fields below.", response.GetErrors());
-            var webTemplates = await Mediator.Send(new GetWebTemplates.Query { ContentTypeId = CurrentView.ContentTypeId, PageSize = int.MaxValue });
-            model.AvailableTemplates = webTemplates.Result?.Items.ToDictionary(p => p.Id.ToString(), p => p.Label);
+
+            var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
+            var webTemplatesResponse = await Mediator.Send(new GetWebTemplates.Query
+            {
+                ThemeId = themeResponse.Result.Id,
+                ContentTypeId = CurrentView.ContentTypeId,
+                PageSize = int.MaxValue
+            });
+
+            model.AvailableTemplates = webTemplatesResponse.Result?.Items.ToDictionary(p => p.Id.ToString(), p => p.Label);
             model.WebsiteUrl = CurrentOrganization.WebsiteUrl.TrimEnd('/') + CurrentOrganization.PathBase + "/";
             return View(model);
         }

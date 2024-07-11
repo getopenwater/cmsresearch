@@ -91,6 +91,13 @@ public class DeleteContentItem
             _entityFrameworkDb.Routes.Remove(entityToDelete.Route);
 
             entityToDelete.AddDomainEvent(new ContentItemDeletedEvent(entityToDelete));
+
+            var webTemplatesMapping = await _entityFrameworkDb.ThemeWebTemplatesMappings
+                .Where(wtm => wtm.ContentItemId == entityToDelete.Id)
+                .ToListAsync(cancellationToken);
+
+            _entityFrameworkDb.ThemeWebTemplatesMappings.RemoveRange(webTemplatesMapping);
+
             await _entityFrameworkDb.SaveChangesAsync(cancellationToken);
             return new CommandResponseDto<ShortGuid>(request.Id);
         }

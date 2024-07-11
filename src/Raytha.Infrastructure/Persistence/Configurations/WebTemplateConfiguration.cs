@@ -8,10 +8,11 @@ public class WebTemplateConfiguration : IEntityTypeConfiguration<WebTemplate>
 {
     public void Configure(EntityTypeBuilder<WebTemplate> builder)
     {
-        builder
-            .HasIndex(b => b.DeveloperName)
-            .IsUnique()
-            .IncludeProperties(p => new { p.Id, p.Label });
+        builder.HasIndex(b => new { b.DeveloperName, b.ThemeId })
+            .IsUnique();
+
+        builder.HasIndex(b => b.DeveloperName)
+            .IsUnique(false);
 
         builder
             .HasOne(b => b.CreatorUser)

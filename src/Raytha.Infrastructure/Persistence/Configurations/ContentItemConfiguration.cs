@@ -17,5 +17,11 @@ public class ContentItemConfiguration : IEntityTypeConfiguration<ContentItem>
             .HasOne(b => b.LastModifierUser)
             .WithMany()
             .HasForeignKey(b => b.LastModifierUserId);
+
+        builder
+            .HasOne(ci => ci.WebTemplate)
+            .WithMany()
+            .HasForeignKey(ci => ci.WebTemplateId)
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

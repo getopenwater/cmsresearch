@@ -280,7 +280,16 @@ public class BeginImportContentItemsFromCsv
             foreach (var record in records)
             {
                 var templateDeveloperName = record[BuiltInContentTypeField.Template.DeveloperName] as string;
-                var template = _db.WebTemplates.FirstOrDefault(s => s.DeveloperName == templateDeveloperName);
+
+                var currentThemeId = await _db.Themes
+                    .Where(t => t.IsActive)
+                    .Select(t => t.Id)
+                    .FirstAsync(cancellationToken);
+
+                var template = await _db.WebTemplates
+                    .Where(wt => wt.ThemeId == currentThemeId)
+                    .FirstOrDefaultAsync(wt => wt.DeveloperName == templateDeveloperName, cancellationToken);
+
                 if (template == null)
                 {
                     yield return new CommandResponseDto<ContentItem>("Template", $"Template was not found with this developer name: {templateDeveloperName}");

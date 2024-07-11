@@ -44,7 +44,16 @@ public class CreateContentType
                     return;
                 }
 
-                var anyAvailableTemplates = db.WebTemplates.Any(p => p.AllowAccessForNewContentTypes && !p.IsBaseLayout);
+                
+                var activeThemeId = db.Themes
+                    .Where(t => t.IsActive)
+                    .Select(t => t.Id)
+                    .First();
+
+                var anyAvailableTemplates = db.WebTemplates
+                    .Where(wt => wt.ThemeId == activeThemeId)
+                    .Any(wt => wt.AllowAccessForNewContentTypes && !wt.IsBaseLayout);
+
                 if (!anyAvailableTemplates)
                 {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "There are no default web templates accessible for new content types. Set a template to allow access to new content types.");
@@ -118,18 +127,28 @@ public class CreateContentType
 
             _db.Views.Add(newView);
 
-            var defaultTemplates = _db.WebTemplates.Where(p => !p.IsBaseLayout && p.AllowAccessForNewContentTypes).ToList();
-            foreach (var template in defaultTemplates)
+            
+            var activeThemeId = await _db.Themes
+                .Where(t => t.IsActive)
+                .Select(t => t.Id)
+                .FirstAsync(cancellationToken);
+
+            var defaultWebTemplates = await _db.WebTemplates
+                .Where(wt => wt.ThemeId == activeThemeId)
+                .Where(wt => !wt.IsBaseLayout && wt.AllowAccessForNewContentTypes)
+                .ToListAsync(cancellationToken);
+
+            foreach (var webTemplate in defaultWebTemplates)
             {
                 var templateAccessModel = new WebTemplateAccessToModelDefinition
                 {
                     ContentTypeId = newContentTypeId,
-                    WebTemplateId = template.Id
+                    WebTemplateId = webTemplate.Id
                 };
                 _db.WebTemplateAccessToModelDefinitions.Add(templateAccessModel);
             }
 
-            var defaultContentListView = defaultTemplates.FirstOrDefault(p => p.DeveloperName == BuiltInWebTemplate.ContentItemListViewPage.DeveloperName) ?? defaultTemplates.First();
+            var defaultContentListView = defaultWebTemplates.FirstOrDefault(p => p.DeveloperName == BuiltInWebTemplate.ContentItemListViewPage.DeveloperName) ?? defaultWebTemplates.First();
 
             newView.WebTemplateId = defaultContentListView.Id;
 

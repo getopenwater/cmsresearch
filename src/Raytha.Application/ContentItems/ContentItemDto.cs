@@ -1,14 +1,10 @@
 ﻿using CSharpVitamins;
-using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Models;
-using Raytha.Application.Common.Utils;
 using Raytha.Application.ContentTypes;
-using Raytha.Application.Templates.Web;
-using Raytha.Domain.Common;
 using Raytha.Domain.Entities;
-using Raytha.Domain.ValueObjects.FieldValues;
 using System.Linq.Expressions;
 using System.Text.Json.Serialization;
+using Raytha.Application.Themes.WebTemplates;
 
 namespace Raytha.Application.ContentItems;
 
@@ -24,7 +20,7 @@ public record ContentItemDto : BaseEntityDto
     public ShortGuid ContentTypeId { get; init; }
 
     [JsonIgnore]
-    public WebTemplateDto WebTemplate { get; init; }
+    public WebTemplateDto? WebTemplate { get; init; }
 
     [JsonIgnore]
     public ContentTypeDto? ContentType { get; init; }

@@ -1059,6 +1059,162 @@ namespace Raytha.Infrastructure.Migrations
                     b.ToTable("Routes");
                 });
 
+            modelBuilder.Entity("Raytha.Domain.Entities.Theme", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DeveloperName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsCanExport")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LastModifierUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PreviewImageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatorUserId");
+
+                    b.HasIndex("DeveloperName")
+                        .IsUnique();
+
+                    b.HasIndex("LastModifierUserId");
+
+                    b.HasIndex("PreviewImageId");
+
+                    b.ToTable("Themes");
+                });
+
+            modelBuilder.Entity("Raytha.Domain.Entities.ThemeAccessToMediaItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("MediaItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ThemeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaItemId");
+
+                    b.HasIndex("ThemeId");
+
+                    b.ToTable("ThemeAccessToMediaItems");
+                });
+
+            modelBuilder.Entity("Raytha.Domain.Entities.ThemeRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LastModifierUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ThemeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WebTemplatesJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WebTemplatesMappingJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatorUserId");
+
+                    b.HasIndex("LastModifierUserId");
+
+                    b.HasIndex("ThemeId");
+
+                    b.ToTable("ThemeRevisions");
+                });
+
+            modelBuilder.Entity("Raytha.Domain.Entities.ThemeWebTemplatesMapping", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ContentItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ThemeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ViewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("WebTemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentItemId");
+
+                    b.HasIndex("ThemeId");
+
+                    b.HasIndex("ViewId");
+
+                    b.HasIndex("WebTemplateId");
+
+                    b.ToTable("ThemeWebTemplatesMappings", t =>
+                        {
+                            t.HasCheckConstraint("CK_ThemeWebTemplatesMapping_ContentItemId_ViewId", "[ContentItemId] IS NOT NULL OR [ViewId] IS NOT NULL");
+                        });
+                });
+
             modelBuilder.Entity("Raytha.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1335,19 +1491,26 @@ namespace Raytha.Infrastructure.Migrations
                     b.Property<Guid?>("ParentTemplateId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("ThemeId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatorUserId");
 
-                    b.HasIndex("DeveloperName")
-                        .IsUnique()
-                        .HasFilter("[DeveloperName] IS NOT NULL");
+                    b.HasIndex("DeveloperName");
 
                     SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("DeveloperName"), new[] { "Id", "Label" });
 
                     b.HasIndex("LastModifierUserId");
 
                     b.HasIndex("ParentTemplateId");
+
+                    b.HasIndex("ThemeId");
+
+                    b.HasIndex("DeveloperName", "ThemeId")
+                        .IsUnique()
+                        .HasFilter("[DeveloperName] IS NOT NULL");
 
                     b.ToTable("WebTemplates");
                 });
@@ -1521,7 +1684,7 @@ namespace Raytha.Infrastructure.Migrations
                     b.HasOne("Raytha.Domain.Entities.WebTemplate", "WebTemplate")
                         .WithMany()
                         .HasForeignKey("WebTemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("ContentType");
@@ -1841,6 +2004,100 @@ namespace Raytha.Infrastructure.Migrations
                     b.Navigation("LastModifierUser");
                 });
 
+            modelBuilder.Entity("Raytha.Domain.Entities.Theme", b =>
+                {
+                    b.HasOne("Raytha.Domain.Entities.User", "CreatorUser")
+                        .WithMany()
+                        .HasForeignKey("CreatorUserId");
+
+                    b.HasOne("Raytha.Domain.Entities.User", "LastModifierUser")
+                        .WithMany()
+                        .HasForeignKey("LastModifierUserId");
+
+                    b.HasOne("Raytha.Domain.Entities.MediaItem", "PreviewImage")
+                        .WithMany()
+                        .HasForeignKey("PreviewImageId");
+
+                    b.Navigation("CreatorUser");
+
+                    b.Navigation("LastModifierUser");
+
+                    b.Navigation("PreviewImage");
+                });
+
+            modelBuilder.Entity("Raytha.Domain.Entities.ThemeAccessToMediaItem", b =>
+                {
+                    b.HasOne("Raytha.Domain.Entities.MediaItem", "MediaItem")
+                        .WithMany()
+                        .HasForeignKey("MediaItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Raytha.Domain.Entities.Theme", "Theme")
+                        .WithMany("ThemeAccessToMediaItems")
+                        .HasForeignKey("ThemeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MediaItem");
+
+                    b.Navigation("Theme");
+                });
+
+            modelBuilder.Entity("Raytha.Domain.Entities.ThemeRevision", b =>
+                {
+                    b.HasOne("Raytha.Domain.Entities.User", "CreatorUser")
+                        .WithMany()
+                        .HasForeignKey("CreatorUserId");
+
+                    b.HasOne("Raytha.Domain.Entities.User", "LastModifierUser")
+                        .WithMany()
+                        .HasForeignKey("LastModifierUserId");
+
+                    b.HasOne("Raytha.Domain.Entities.Theme", "Theme")
+                        .WithMany("Revisions")
+                        .HasForeignKey("ThemeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatorUser");
+
+                    b.Navigation("LastModifierUser");
+
+                    b.Navigation("Theme");
+                });
+
+            modelBuilder.Entity("Raytha.Domain.Entities.ThemeWebTemplatesMapping", b =>
+                {
+                    b.HasOne("Raytha.Domain.Entities.ContentItem", "ContentItem")
+                        .WithMany()
+                        .HasForeignKey("ContentItemId");
+
+                    b.HasOne("Raytha.Domain.Entities.Theme", "Theme")
+                        .WithMany("WebTemplatesMappings")
+                        .HasForeignKey("ThemeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Raytha.Domain.Entities.View", "View")
+                        .WithMany()
+                        .HasForeignKey("ViewId");
+
+                    b.HasOne("Raytha.Domain.Entities.WebTemplate", "WebTemplate")
+                        .WithMany()
+                        .HasForeignKey("WebTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ContentItem");
+
+                    b.Navigation("Theme");
+
+                    b.Navigation("View");
+
+                    b.Navigation("WebTemplate");
+                });
+
             modelBuilder.Entity("Raytha.Domain.Entities.User", b =>
                 {
                     b.HasOne("Raytha.Domain.Entities.AuthenticationScheme", "AuthenticationScheme")
@@ -1919,7 +2176,7 @@ namespace Raytha.Infrastructure.Migrations
                     b.HasOne("Raytha.Domain.Entities.WebTemplate", "WebTemplate")
                         .WithMany()
                         .HasForeignKey("WebTemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("ContentType");
@@ -1947,11 +2204,19 @@ namespace Raytha.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ParentTemplateId");
 
+                    b.HasOne("Raytha.Domain.Entities.Theme", "Theme")
+                        .WithMany("WebTemplates")
+                        .HasForeignKey("ThemeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("CreatorUser");
 
                     b.Navigation("LastModifierUser");
 
                     b.Navigation("ParentTemplate");
+
+                    b.Navigation("Theme");
                 });
 
             modelBuilder.Entity("Raytha.Domain.Entities.WebTemplateAccessToModelDefinition", b =>
@@ -2086,6 +2351,17 @@ namespace Raytha.Infrastructure.Migrations
 
                     b.Navigation("View")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Raytha.Domain.Entities.Theme", b =>
+                {
+                    b.Navigation("Revisions");
+
+                    b.Navigation("ThemeAccessToMediaItems");
+
+                    b.Navigation("WebTemplates");
+
+                    b.Navigation("WebTemplatesMappings");
                 });
 
             modelBuilder.Entity("Raytha.Domain.Entities.User", b =>

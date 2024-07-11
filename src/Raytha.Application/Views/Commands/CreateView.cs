@@ -80,6 +80,11 @@ public class CreateView
                 Description = request.Description
             };
 
+            var activeThemeId = await _db.Themes
+                .Where(t => t.IsActive)
+                .Select(t => t.Id)
+                .FirstAsync(cancellationToken);
+
             if (request.DuplicateFromId != ShortGuid.Empty && request.DuplicateFromId.HasValue)
             {
                 var originalView = _db.Views.First(p => p.Id == request.DuplicateFromId.Value.Guid);
@@ -90,6 +95,16 @@ public class CreateView
                 entity.DefaultNumberOfItemsPerPage = originalView.DefaultNumberOfItemsPerPage;
                 entity.MaxNumberOfItemsPerPage = originalView.MaxNumberOfItemsPerPage;
                 entity.IgnoreClientFilterAndSortQueryParams = originalView.IgnoreClientFilterAndSortQueryParams;
+
+                var themeWebTemplatesMapping = new ThemeWebTemplatesMapping
+                {
+                    Id = Guid.NewGuid(),
+                    ThemeId = activeThemeId,
+                    WebTemplateId = originalView.WebTemplateId,
+                    ViewId = entity.Id,
+                };
+
+                await _db.ThemeWebTemplatesMappings.AddAsync(themeWebTemplatesMapping, cancellationToken);
             }
             else
             {
@@ -113,8 +128,13 @@ public class CreateView
 
                 entity.Columns = chosenColumns.Select(p => p.DeveloperName);
 
-                var defaultTemplate = _db.WebTemplates.First(p => p.DeveloperName == BuiltInWebTemplate.ContentItemListViewPage);
-                entity.WebTemplateId = defaultTemplate.Id;
+                var defaultTemplateId = await _db.WebTemplates
+                    .Where(wt => wt.ThemeId == activeThemeId)
+                    .Where(wt => wt.DeveloperName == BuiltInWebTemplate.ContentItemListViewPage)
+                    .Select(wt => wt.Id)
+                    .FirstAsync(cancellationToken);
+
+                entity.WebTemplateId = defaultTemplateId;
             }
 
             var path = GetRoutePath(request.DeveloperName, newEntityId, request.ContentTypeId.Guid);

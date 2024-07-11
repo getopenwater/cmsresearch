@@ -6,6 +6,7 @@ using Raytha.Application.Common.Exceptions;
 using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Models;
 using Raytha.Application.Common.Utils;
+using Raytha.Domain.Entities;
 
 namespace Raytha.Application.Views.Commands;
 
@@ -49,12 +50,18 @@ public class EditPublicSettings
                 if (entity == null)
                     throw new NotFoundException("View", request.Id);
 
+                var activeThemeId = db.Themes
+                    .Where(t => t.IsActive)
+                    .Select(t => t.Id)
+                    .First();
+
                 var template = db.WebTemplates
-                    .Include(p => p.TemplateAccessToModelDefinitions)
-                    .FirstOrDefault(p => p.Id == request.TemplateId.Guid);
+                    .Where(wt => wt.ThemeId == activeThemeId)
+                    .Include(wt => wt.TemplateAccessToModelDefinitions)
+                    .FirstOrDefault(wt => wt.Id == request.TemplateId.Guid);
 
                 if (template == null)
-                    throw new NotFoundException("WebTemplate", request.TemplateId);
+                    throw new NotFoundException("Template", request.TemplateId);
 
                 if (!template.TemplateAccessToModelDefinitions.Any(p => p.ContentTypeId == entity.ContentType.Id))
                 {
@@ -97,6 +104,33 @@ public class EditPublicSettings
             entity.DefaultNumberOfItemsPerPage = request.DefaultNumberOfItemsPerPage;
             entity.MaxNumberOfItemsPerPage = request.MaxNumberOfItemsPerPage;
             entity.IgnoreClientFilterAndSortQueryParams = request.IgnoreClientFilterAndSortQueryParams;
+
+            var activeThemeId = _db.Themes
+                .Where(t => t.IsActive)
+                .Select(t => t.Id)
+                .First();
+
+            var themeWebTemplateMapping = await _db.ThemeWebTemplatesMappings
+                .Where(wtm => wtm.ThemeId == activeThemeId)
+                .Where(wtm => wtm.ViewId == entity.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (themeWebTemplateMapping == null)
+            {
+                await _db.ThemeWebTemplatesMappings.AddAsync(new ThemeWebTemplatesMapping
+                {
+                    Id = Guid.NewGuid(),
+                    ThemeId = activeThemeId,
+                    WebTemplateId = request.TemplateId.Guid,
+                    ViewId = entity.Id,
+                }, cancellationToken);
+            }
+            else
+            {
+                themeWebTemplateMapping.WebTemplateId = request.TemplateId;
+
+                _db.ThemeWebTemplatesMappings.Update(themeWebTemplateMapping);
+            }
 
             await _db.SaveChangesAsync(cancellationToken);
             return new CommandResponseDto<ShortGuid>(entity.Id);

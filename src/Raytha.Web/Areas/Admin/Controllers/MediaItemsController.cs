@@ -11,6 +11,7 @@ using Raytha.Domain.Entities;
 using Raytha.Web.Areas.Admin.Views.MediaItems;
 using System.IO;
 using System.Threading.Tasks;
+using Raytha.Application.Themes.Queries;
 
 namespace Raytha.Web.Areas.Admin.Controllers;
 
@@ -23,18 +24,32 @@ public class MediaItemsController : BaseController
 
     [HttpPost]
     [Route($"{RAYTHA_ROUTE_PREFIX}/media-items/presign", Name = "mediaitemspresignuploadurl")]
-    public async Task<IActionResult> CloudUploadPresignRequest(string contentType, [FromBody] MediaItemPresignRequest_ViewModel body)
+    public async Task<IActionResult> CloudUploadPresignRequest([FromBody] MediaItemPresignRequest_ViewModel body, string contentType, string themeId, bool isThemePreviewImage)
     {
         var idForKey = ShortGuid.NewGuid();
-        var objectKey = FileStorageUtility.CreateObjectKeyFromIdAndFileName(idForKey, body.filename);
-        var url = await FileStorageProvider.GetUploadUrlAsync(objectKey, body.filename, body.contentType, FileStorageUtility.GetDefaultExpiry());
+        var objectKey = string.Empty;
 
+        if (!string.IsNullOrEmpty(themeId))
+        {
+            var themeResponse = await Mediator.Send(new GetThemeById.Query
+            {
+                Id = themeId,
+            });
+
+            objectKey = FileStorageUtility.CreateObjectKeyFromIdAndFileName(themeResponse.Result.DeveloperName, body.filename);
+        }
+        else
+        {
+            objectKey = FileStorageUtility.CreateObjectKeyFromIdAndFileName(idForKey, body.filename);
+        }
+
+        var url = await FileStorageProvider.GetUploadUrlAsync(objectKey, body.filename, body.contentType, FileStorageUtility.GetDefaultExpiry());
         return Json(new { url, fields = new { id = idForKey.ToString(), fileName = body.filename, body.contentType, objectKey } });
     }
 
     [HttpPost]
-    [Route($"{RAYTHA_ROUTE_PREFIX}/media-items/create-after-upload", Name = "mediaitemscreate")]
-    public async Task<IActionResult> CloudUploadCreateAfterUpload(string contentType, [FromBody] MediaItemCreateAfterUpload_ViewModel body)
+    [Route($"{RAYTHA_ROUTE_PREFIX}/media-items/create-after-upload", Name = "mediaitemscreateafterupload")]
+    public async Task<IActionResult> CloudUploadCreateAfterUpload([FromBody] MediaItemCreateAfterUpload_ViewModel body, string contentType, string themeId, bool isThemePreviewImage)
     {
         var input = new CreateMediaItem.Command
         {
@@ -43,7 +58,8 @@ public class MediaItemsController : BaseController
             Length = body.length,
             ContentType = body.contentType,
             FileStorageProvider = FileStorageProvider.GetName(),
-            ObjectKey = body.objectKey
+            ObjectKey = body.objectKey,
+            ThemeId = themeId,
         };
 
         var response = await Mediator.Send(input);
@@ -60,7 +76,7 @@ public class MediaItemsController : BaseController
 
     [HttpPost]
     [Route($"{RAYTHA_ROUTE_PREFIX}/media-items/upload", Name = "mediaitemslocalstorageupload")]
-    public async Task<IActionResult> LocalStorageUpload(IFormFile file, string contentType)
+    public async Task<IActionResult> LocalStorageUpload(IFormFile file, string contentType, ShortGuid themeId, bool isThemePreviewImage)
     {
         if (file.Length <= 0)
         {
@@ -73,8 +89,22 @@ public class MediaItemsController : BaseController
             var data = stream.ToArray();
 
             var idForKey = ShortGuid.NewGuid();
+            string objectKey;
 
-            var objectKey = FileStorageUtility.CreateObjectKeyFromIdAndFileName(idForKey, file.FileName);
+            if (!string.IsNullOrEmpty(themeId))
+            {
+                var themeResponse = await Mediator.Send(new GetThemeById.Query
+                {
+                    Id = themeId,
+                });
+
+                objectKey = FileStorageUtility.CreateObjectKeyFromIdAndFileName(themeResponse.Result.DeveloperName, file.FileName);
+            }
+            else
+            {
+                objectKey = FileStorageUtility.CreateObjectKeyFromIdAndFileName(idForKey, file.FileName);
+            }
+
             await FileStorageProvider.SaveAndGetDownloadUrlAsync(data, objectKey, file.FileName, file.ContentType, FileStorageUtility.GetDefaultExpiry());
 
             var input = new CreateMediaItem.Command
@@ -84,7 +114,9 @@ public class MediaItemsController : BaseController
                 Length = data.Length,
                 ContentType = file.ContentType,
                 FileStorageProvider = FileStorageProvider.GetName(),
-                ObjectKey = objectKey
+                ObjectKey = objectKey,
+                ThemeId = themeId,
+                IsThemePreviewImage = isThemePreviewImage,
             };
 
             var response = await Mediator.Send(input);

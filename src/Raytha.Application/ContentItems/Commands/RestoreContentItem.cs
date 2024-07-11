@@ -34,16 +34,27 @@ public class RestoreContentItem
 
             _contentTypeInRoutePath.ValidateContentTypeInRoutePathMatchesValue(entity.ContentType.DeveloperName);
 
-            Guid templateId = Guid.Empty;
+            var templateId = Guid.Empty;
+            var activeThemeId = await _db.Themes
+                .Where(t => t.IsActive)
+                .Select(t => t.Id)
+                .FirstAsync(cancellationToken);
 
-            var templateExists = _db.WebTemplates.FirstOrDefault(p => p.Id == entity.WebTemplateId);
+            var templateExists = _db.WebTemplates
+                .Where(wt => wt.ThemeId == activeThemeId)
+                .FirstOrDefault(wt => wt.Id == entity.WebTemplateId);
+
             if (templateExists != null)
             {
                 templateId = templateExists.Id;
             }
             else
             {
-                templateId = _db.WebTemplates.First(p => p.DeveloperName == BuiltInWebTemplate.ContentItemDetailViewPage).Id;
+                templateId = await _db.WebTemplates
+                    .Where(wt => wt.ThemeId == activeThemeId)
+                    .Where(wt => wt.DeveloperName == BuiltInWebTemplate.ContentItemDetailViewPage)
+                    .Select(wt => wt.Id)
+                    .FirstAsync(cancellationToken);
             }
 
             string path = string.Empty;
@@ -74,6 +85,16 @@ public class RestoreContentItem
             };
             _db.ContentItems.Add(restoredEntity);
             _db.DeletedContentItems.Remove(entity);
+
+            var themeWebTemplateMapping = new ThemeWebTemplatesMapping
+            {
+                Id = Guid.NewGuid(),
+                ThemeId = activeThemeId,
+                WebTemplateId = templateId,
+                ContentItemId = restoredEntity.Id,
+            };
+
+            await _db.ThemeWebTemplatesMappings.AddAsync(themeWebTemplateMapping, cancellationToken);
 
             await _db.SaveChangesAsync(cancellationToken);
             return new CommandResponseDto<ShortGuid>(entity.OriginalContentItemId);

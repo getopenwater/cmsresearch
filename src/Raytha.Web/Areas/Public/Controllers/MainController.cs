@@ -8,6 +8,7 @@ using Raytha.Application.ContentItems;
 using Raytha.Application.ContentItems.Queries;
 using Raytha.Application.ContentTypes;
 using Raytha.Application.Routes.Queries;
+using Raytha.Application.Themes.Queries;
 using Raytha.Application.Views.Queries;
 using Raytha.Domain.Entities;
 using Raytha.Web.Areas.Public.DbViewEngine;

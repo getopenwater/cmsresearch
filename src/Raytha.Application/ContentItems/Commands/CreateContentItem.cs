@@ -49,9 +49,15 @@ public class CreateContentItem
                 if (contentTypeDefinition == null)
                     throw new NotFoundException("Content Type", request.ContentTypeDeveloperName.ToDeveloperName());
 
+                var activeThemeId = db.Themes
+                    .Where(t => t.IsActive)
+                    .Select(t => t.Id)
+                    .First();
+
                 var template = db.WebTemplates
-                    .Include(p => p.TemplateAccessToModelDefinitions)
-                    .FirstOrDefault(p => p.Id == request.TemplateId.Guid);
+                    .Where(wt => wt.ThemeId == activeThemeId)
+                    .Include(wt => wt.TemplateAccessToModelDefinitions)
+                    .FirstOrDefault(wt => wt.Id == request.TemplateId.Guid);
 
                 if (template == null)
                     throw new NotFoundException("WebTemplate", request.TemplateId);
@@ -122,6 +128,21 @@ public class CreateContentItem
 
             _db.ContentItems.Add(entity);
             entity.AddDomainEvent(new ContentItemCreatedEvent(entity));
+
+            var activeThemeId = await _db.Themes
+                .Where(t => t.IsActive)
+                .Select(t => t.Id)
+                .FirstAsync(cancellationToken);
+
+            var themeWebTemplatesMapping = new ThemeWebTemplatesMapping
+            {
+                Id = Guid.NewGuid(),
+                ThemeId = activeThemeId,
+                WebTemplateId = request.TemplateId,
+                ContentItemId = newEntityId,
+            };
+
+            await _db.ThemeWebTemplatesMappings.AddAsync(themeWebTemplatesMapping, cancellationToken);
 
             await _db.SaveChangesAsync(cancellationToken);
 

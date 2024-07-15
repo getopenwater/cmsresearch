@@ -120,6 +120,15 @@ public class ThemeRevisionsPagination_ViewModel : Pagination_ViewModel
 
 public class ThemesBeginImportFromUrl_ViewModel : FormSubmit_ViewModel
 {
+    [Display(Name = "Title")]
+    public string Title { get; init; }
+
+    [Display(Name = "Description")]
+    public string Description { get; init; }
+
+    [Display(Name = "Developer Name")]
+    public string DeveloperName { get; set; }
+
     public string Url { get; set; }
 }
 

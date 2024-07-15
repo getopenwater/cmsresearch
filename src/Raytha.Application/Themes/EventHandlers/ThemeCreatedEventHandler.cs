@@ -36,6 +36,8 @@ public class ThemeCreatedEventHandler : INotificationHandler<ThemeCreatedEvent>
         if (notification.InsertDefaultMediaItems)
             await InsertDefaultMediaItemsAsync(theme.Id, theme.DeveloperName, cancellationToken);
 
+        await SaveActiveThemeWebTemplateMappingsIfNotExists(cancellationToken);
+
         await _db.SaveChangesAsync(cancellationToken);
     }
 
@@ -221,5 +223,55 @@ public class ThemeCreatedEventHandler : INotificationHandler<ThemeCreatedEvent>
 
         _db.MediaItems.AddRange(mediaItems);
         _db.ThemeAccessToMediaItems.AddRange(themeAccessToMediaItems);
+    }
+
+    private async Task SaveActiveThemeWebTemplateMappingsIfNotExists(CancellationToken cancellationToken)
+    {
+        var activeThemeId = await _db.Themes
+            .Where(t => t.IsActive == true)
+            .Select(t => t.Id)
+            .FirstAsync(cancellationToken);
+
+        var contentItems = await _db.ContentItems.ToListAsync(cancellationToken);
+        foreach (var contentItem in contentItems)
+        {
+            var webTemplateMappingByContentItemId = await _db.ThemeWebTemplatesMappings
+                .Where(wtm => wtm.ContentItemId == contentItem.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (webTemplateMappingByContentItemId == null)
+            {
+                var webTemplateMapping = new ThemeWebTemplatesMapping
+                {
+                    Id = Guid.NewGuid(),
+                    ThemeId = activeThemeId,
+                    WebTemplateId = contentItem.WebTemplateId,
+                    ContentItemId = contentItem.Id,
+                };
+
+                await _db.ThemeWebTemplatesMappings.AddAsync(webTemplateMapping, cancellationToken);
+            }
+        }
+
+        var views = await _db.Views.ToListAsync(cancellationToken);
+        foreach (var view in views)
+        {
+            var webTemplateMappingByViewId = await _db.ThemeWebTemplatesMappings
+                .Where(wtm => wtm.ViewId == view.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (webTemplateMappingByViewId == null)
+            {
+                var webTemplateMapping = new ThemeWebTemplatesMapping
+                {
+                    Id = Guid.NewGuid(),
+                    ThemeId = activeThemeId,
+                    WebTemplateId = view.WebTemplateId,
+                    ViewId = view.Id,
+                };
+
+                await _db.ThemeWebTemplatesMappings.AddAsync(webTemplateMapping, cancellationToken);
+            }
+        }
     }
 }

@@ -2,11 +2,11 @@
 
 public class ThemeCreatedEvent : BaseEvent, IAfterSaveChangesNotification
 {
-    public Theme Theme { get; set; }
-    public string? ImageBase64 { get; set; }
-    public string? ImageFileType { get; set; }
-    public string? ImageFileName { get; set; }
-    public bool InsertDefaultMediaItems { get; set; }
+    public Theme Theme { get; }
+    public string? ImageBase64 { get; }
+    public string? ImageFileType { get; }
+    public string? ImageFileName { get; }
+    public bool InsertDefaultMediaItems { get; }
 
     public ThemeCreatedEvent(Theme theme, string? imageBase64, string? imageFileName, string? imageFileType, bool insertDefaultMediaItems)
     {

@@ -4,6 +4,7 @@ using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Raytha.Application.Common.Exceptions;
+using Raytha.Application.Common.Utils;
 using Raytha.Application.MediaItems;
 using Raytha.Application.Themes.WebTemplates;
 
@@ -26,10 +27,15 @@ public class ExportTheme
         public Validator(IRaythaDbContext db)
         {
             RuleFor(x => x.DeveloperName).NotEmpty();
-            RuleFor(x => x).Custom((request, _) =>
+            RuleFor(x => x).Custom((request, context) =>
             {
-                if (!db.Themes.Any(t => t.DeveloperName == request.DeveloperName))
+                var entity = db.Themes.FirstOrDefault(t => t.DeveloperName == request.DeveloperName.ToDeveloperName());
+
+                if (entity == null)
                     throw new NotFoundException("Theme", request.DeveloperName);
+
+                if (!entity.IsCanExport)
+                    context.AddFailure("IsCanExport", "The theme can not be exported");
             });
         }
     }
@@ -69,9 +75,6 @@ public class ExportTheme
 
             var themePackage = new ThemeJson
             {
-                Title = theme.Title,
-                DeveloperName = theme.DeveloperName,
-                Description = theme.Description,
                 WebTemplates = theme.WebTemplates.Select(WebTemplateJson.GetProjection),
                 MediaItems = mediaItemsJson,
             };

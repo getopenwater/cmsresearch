@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CSharpVitamins;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Raytha.Application.BackgroundTasks.Queries;
@@ -332,6 +333,9 @@ public class ThemesController : BaseController
     {
         var input = new BeginImportThemeFromUrl.Command
         {
+            Title = model.Title,
+            DeveloperName = model.DeveloperName,
+            Description = model.Description,
             Url = url,
         };
 
@@ -381,10 +385,17 @@ public class ThemesController : BaseController
 
         var response = await Mediator.Send(input);
 
-        return Json(response.Result, new JsonSerializerOptions
+        if (response.Success)
         {
-            WriteIndented = true,
-        });
+            return Json(response.Result, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+            });
+        }
+        else
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, response.Error);
+        }
     }
 
     [ServiceFilter(typeof(SetPaginationInformationFilterAttribute))]

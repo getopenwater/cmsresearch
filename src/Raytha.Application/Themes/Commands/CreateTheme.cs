@@ -39,7 +39,7 @@ public class CreateTheme
             RuleFor(x => x.DeveloperName).NotEmpty();
             RuleFor(x => x).Custom((request, context) =>
             {
-                if (db.Themes.Any(rt => rt.DeveloperName == request.DeveloperName.ToDeveloperName()))
+                if (db.Themes.Any(t => t.DeveloperName == request.DeveloperName.ToDeveloperName()))
                     context.AddFailure("DeveloperName", $"A theme with the developer name {request.DeveloperName.ToDeveloperName()} already exists.");
             });
         }

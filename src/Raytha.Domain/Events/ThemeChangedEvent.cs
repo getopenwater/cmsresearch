@@ -2,7 +2,7 @@
 
 public class ThemeChangedEvent : BaseEvent, IBeforeSaveChangesNotification
 {
-    public Guid ThemeId { get; set; }
+    public Guid ThemeId { get; }
 
     public ThemeChangedEvent(Guid themeId)
     {

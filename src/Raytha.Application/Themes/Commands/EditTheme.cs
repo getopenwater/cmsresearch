@@ -28,12 +28,10 @@ public class EditTheme
         {
             RuleFor(x => x.Title).NotEmpty();
             RuleFor(x => x.Description).NotEmpty();
-            RuleFor(x => x).Custom((request, context) =>
+            RuleFor(x => x).Custom((request, _) =>
             {
                 if (!db.Themes.Any(rt => rt.Id == request.Id.Guid))
                     throw new NotFoundException("Theme", request.Id);
-
-                context.AddFailure("asd");
             });
         }
     }

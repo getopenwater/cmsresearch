@@ -24,15 +24,25 @@ public class DeleteTheme
             RuleFor(x => x).Custom((request, context) =>
             {
                 var entity = db.Themes.FirstOrDefault(t => t.Id == request.Id.Guid);
-                
+
                 if (entity == null)
+                {
                     throw new NotFoundException("Theme", request.Id);
+                }
 
                 if (entity.IsActive)
+                {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "You cannot delete an active theme. Set another theme as the active theme before deleting this one.");
 
+                    return;
+                }
+
                 if (entity.DeveloperName == Theme.DEFAULT_THEME_DEVELOPER_NAME)
+                {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "You cannot delete the default theme.");
+
+                    return;
+                }
             });
         }
     }

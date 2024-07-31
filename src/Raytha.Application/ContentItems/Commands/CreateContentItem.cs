@@ -132,6 +132,7 @@ public class CreateContentItem
 
             var webTemplateContentItemMapping = new ThemeWebTemplateContentItemMapping
             {
+                Id = Guid.NewGuid(),
                 ThemeId = activeThemeId,
                 WebTemplateId = request.TemplateId.Guid,
                 ContentItemId = entity.Id,

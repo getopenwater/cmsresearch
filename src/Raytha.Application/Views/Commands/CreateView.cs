@@ -102,6 +102,7 @@ public class CreateView
 
                 var webTemplateViewMapping = new ThemeWebTemplateViewMapping
                 {
+                    Id = Guid.NewGuid(),
                     ThemeId = activeThemeId,
                     WebTemplateId = originalViewWebTemplateId,
                     ViewId = entity.Id,
@@ -139,6 +140,7 @@ public class CreateView
 
                 var webTemplateViewMapping = new ThemeWebTemplateViewMapping
                 {
+                    Id = Guid.NewGuid(),
                     ThemeId = activeThemeId,
                     ViewId = entity.Id,
                     WebTemplateId = defaultTemplateId,

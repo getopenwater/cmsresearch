@@ -533,6 +533,7 @@ public class InitialSetup
 
             var webTemplateHomePageContentItemMapping = new ThemeWebTemplateContentItemMapping
             {
+                Id = Guid.NewGuid(),
                 ThemeId = defaultThemeId,
                 WebTemplateId = homePageTemplateId,
                 ContentItemId = homePageGuid,
@@ -587,6 +588,7 @@ public class InitialSetup
 
             var webTemplateAboutPageContentItemMapping = new ThemeWebTemplateContentItemMapping
             {
+                Id = Guid.NewGuid(),
                 ThemeId = defaultThemeId,
                 WebTemplateId = aboutPageTemplateId,
                 ContentItemId = anotherPageId,
@@ -637,6 +639,7 @@ public class InitialSetup
 
             var webTemplatePostContentItemMapping = new ThemeWebTemplateContentItemMapping
             {
+                Id = Guid.NewGuid(),
                 ThemeId = defaultThemeId,
                 WebTemplateId = postTemplateId,
                 ContentItemId = postId,
@@ -676,6 +679,7 @@ public class InitialSetup
 
             var webTemplatePageViewMapping = new ThemeWebTemplateViewMapping
             {
+                Id = Guid.NewGuid(),
                 ThemeId = defaultThemeId,
                 WebTemplateId = listViewTemplateId,
                 ViewId = defaultPageViewId,
@@ -702,6 +706,7 @@ public class InitialSetup
 
             var webTemplatePostsViewMapping = new ThemeWebTemplateViewMapping
             {
+                Id = Guid.NewGuid(),
                 ThemeId = defaultThemeId,
                 WebTemplateId = listViewTemplateId,
                 ViewId = defaultPostsViewId,

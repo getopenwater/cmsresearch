@@ -97,7 +97,6 @@ public class BuiltInContentTypeField : ValueObject
             yield return LastModifierUser;
             yield return IsDraft;
             yield return IsPublished;
-            yield return Template;
         }
     }
 

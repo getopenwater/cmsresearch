@@ -8,7 +8,7 @@ public record ThemeWebTemplateMappingDto : BaseEntityDto
 {
     public required bool AnyWebTemplateContentItemMappings { get; init; }
     public required bool AnyWebTemplateViewMappings { get; init; }
-    public bool IsWebTemplateMatchingRequired => !AnyWebTemplateContentItemMappings || !AnyWebTemplateContentItemMappings;
+    public bool IsWebTemplateMatchingRequired => !AnyWebTemplateContentItemMappings || !AnyWebTemplateViewMappings;
 
     public static Expression<Func<bool, bool, ThemeWebTemplateMappingDto>> GetProjection()
     {

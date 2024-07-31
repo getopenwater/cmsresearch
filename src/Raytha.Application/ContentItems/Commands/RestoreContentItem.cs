@@ -86,6 +86,7 @@ public class RestoreContentItem
 
             var webTemplateContentItemMapping = new ThemeWebTemplateContentItemMapping
             {
+                Id = Guid.NewGuid(),
                 ThemeId = activeThemeId,
                 WebTemplateId = templateId,
                 ContentItemId = restoredEntity.Id,

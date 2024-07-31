@@ -11,7 +11,7 @@ public class ThemeWebTemplateViewMappingConfiguration : IEntityTypeConfiguration
         builder
             .HasOne(wtm => wtm.WebTemplate)
             .WithMany()
-            .HasForeignKey(t => t.WebTemplateId)
+            .HasForeignKey(wtm => wtm.WebTemplateId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder

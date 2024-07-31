@@ -135,6 +135,7 @@ public class SetAsActiveTheme
 
                         var themeWebTemplateContentMapping = new ThemeWebTemplateContentItemMapping
                         {
+                            Id = Guid.NewGuid(),
                             ThemeId = themeId,
                             ContentItemId = contentItemId,
                             WebTemplateId = webTemplateId,
@@ -178,6 +179,7 @@ public class SetAsActiveTheme
 
                         var themeWebTemplateContentMapping = new ThemeWebTemplateViewMapping
                         {
+                            Id = Guid.NewGuid(),
                             ThemeId = themeId,
                             ViewId = viewId,
                             WebTemplateId = webTemplateId,

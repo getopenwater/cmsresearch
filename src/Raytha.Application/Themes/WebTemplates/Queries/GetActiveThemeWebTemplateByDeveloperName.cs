@@ -1,5 +1,4 @@
-﻿using CSharpVitamins;
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Raytha.Application.Common.Exceptions;
 using Raytha.Application.Common.Interfaces;
@@ -8,11 +7,10 @@ using Raytha.Application.Common.Utils;
 
 namespace Raytha.Application.Themes.WebTemplates.Queries;
 
-public class GetWebTemplateByDeveloperName
+public class GetActiveThemeWebTemplateByDeveloperName
 {
     public record Query : IRequest<IQueryResponseDto<WebTemplateDto>>
     {
-        public required ShortGuid ThemeId { get; init; }
         public required string DeveloperName { get; init; }
     }
 
@@ -27,8 +25,12 @@ public class GetWebTemplateByDeveloperName
 
         public async Task<IQueryResponseDto<WebTemplateDto>> Handle(Query request, CancellationToken cancellationToken)
         {
+            var activeThemeId = await _db.OrganizationSettings
+                .Select(os => os.ActiveThemeId)
+                .FirstAsync(cancellationToken);
+
             var entity = _db.WebTemplates
-                .Where(wt => wt.ThemeId == request.ThemeId.Guid)
+                .Where(wt => wt.ThemeId == activeThemeId)
                 .Include(p => p.TemplateAccessToModelDefinitions)
                     .ThenInclude(p => p.ContentType)
                 .FirstOrDefault(p => p.DeveloperName == request.DeveloperName.ToDeveloperName());

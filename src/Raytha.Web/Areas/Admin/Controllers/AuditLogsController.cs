@@ -190,12 +190,10 @@ public class AuditLogsController : BaseController
             ExportTheme.Command.Empty().GetLogName(),
             BeginImportThemeFromUrl.Command.Empty().GetLogName(),
             CreateTheme.Command.Empty().GetLogName(),
-            CreateThemeRevision.Command.Empty().GetLogName(),
             new DeleteTheme.Command().GetLogName(),
             EditTheme.Command.Empty().GetLogName(),
             EditThemeForExport.Command.Empty().GetLogName(),
-            RevertTheme.Command.Empty().GetLogName(),
-            new SetAsActiveTheme.Command().GetLogName(),
+            SetAsActiveTheme.Command.Empty().GetLogName(),
 
             //Web-Templates
             CreateWebTemplate.Command.Empty().GetLogName(),

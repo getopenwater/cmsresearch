@@ -30,8 +30,7 @@ public class GetWebTemplatesAsListItems
             if (!string.IsNullOrEmpty(request.Search))
             {
                 var searchQuery = request.Search.ToLower();
-                query = query
-                    .Where(wt => (wt.Label!.ToLower().Contains(searchQuery) || wt.DeveloperName!.ToLower().Contains(searchQuery)));
+                query = query.Where(wt => (wt.Label!.ToLower().Contains(searchQuery) || wt.DeveloperName!.ToLower().Contains(searchQuery)));
             }
 
             var total = await query.CountAsync(cancellationToken);

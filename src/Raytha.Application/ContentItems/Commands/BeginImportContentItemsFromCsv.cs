@@ -74,11 +74,6 @@ public class BeginImportContentItemsFromCsv
                             context.AddFailure(Constants.VALIDATION_SUMMARY, "Your CSV file is missing data.");
                             return;
                         }
-                        if (!csvFile.All(p => p.ContainsKey(BuiltInContentTypeField.Template.DeveloperName)))
-                        {
-                            context.AddFailure(Constants.VALIDATION_SUMMARY, $"You must provide `{BuiltInContentTypeField.Template.DeveloperName}` column.");
-                            return;
-                        }
                         if (importMethod == ImportMethod.UpdateExistingRecordsOnly && !csvFile.All(p => p.ContainsKey(BuiltInContentTypeField.Id.DeveloperName)))
                         {
                             context.AddFailure(Constants.VALIDATION_SUMMARY, $"You must provide `{BuiltInContentTypeField.Id.DeveloperName}` column for updating records.");
@@ -198,7 +193,6 @@ public class BeginImportContentItemsFromCsv
                     currentRecord.DraftContent = item.Result.DraftContent;
                     if (!importAsDraft)
                         currentRecord.PublishedContent = item.Result.PublishedContent;
-                    currentRecord.WebTemplateId = item.Result.WebTemplateId;
                     currentRecord.IsDraft = item.Result.IsDraft;
                     currentRecord.IsPublished = item.Result.IsPublished;
                     _db.ContentItems.Update(currentRecord);
@@ -279,23 +273,6 @@ public class BeginImportContentItemsFromCsv
         {
             foreach (var record in records)
             {
-                var templateDeveloperName = record[BuiltInContentTypeField.Template.DeveloperName] as string;
-
-                var currentThemeId = await _db.Themes
-                    .Where(t => t.IsActive)
-                    .Select(t => t.Id)
-                    .FirstAsync(cancellationToken);
-
-                var template = await _db.WebTemplates
-                    .Where(wt => wt.ThemeId == currentThemeId)
-                    .FirstOrDefaultAsync(wt => wt.DeveloperName == templateDeveloperName, cancellationToken);
-
-                if (template == null)
-                {
-                    yield return new CommandResponseDto<ContentItem>("Template", $"Template was not found with this developer name: {templateDeveloperName}");
-                    continue;
-                }
-
                 var content = new Dictionary<string, dynamic>();
 
                 foreach (var field in record)
@@ -360,7 +337,6 @@ public class BeginImportContentItemsFromCsv
                     DraftContent = content,
                     IsPublished = importAsDraft == false,
                     IsDraft = importAsDraft,
-                    WebTemplateId = template.Id,
                     ContentTypeId = contentType.Id
                 };
 

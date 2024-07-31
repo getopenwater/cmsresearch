@@ -1,7 +1,7 @@
 ﻿@using Raytha.Web.Areas.Admin.Views.Themes
 @using Raytha.Application.Common.Interfaces
 
-@inject IFileStorageProvider FileStorageProvider
+@inject ICurrentOrganization CurrentOrganization
 
 @model Raytha.Web.Areas.Admin.Views.Themes.ThemesEdit_ViewModel
 @{
@@ -18,10 +18,10 @@
         <div class="card border-0 shadow mb-4">
             <div class="card-body">
                 @(await Html.PartialAsync("_BackToList", new ThemesBackToList_ViewModel
-            {
-                IsWebTemplates = false,
-                IsMediaItems = false,
-            }))
+                {
+                    IsWebTemplates = false,
+                    IsMediaItems = false,
+                }))
                 <form asp-route="themesedit" method="post" class="py-4">
                     <input type="hidden" asp-for="Id">
                     <div class="col-lg-12 col-md-12">
@@ -48,31 +48,11 @@
                             <div class="invalid-feedback">@Model.ErrorMessageFor("Description")</div>
                         </div>
                     </div>
-                    <div class="col-lg-12 col-md-12">
-                        <div class="mb-3">
-                            <label class="form-label">Preview image</label>
-                            <input type="hidden" asp-for="PreviewImageObjectKey"/>
-                            @{
-                                var imageUrl = Model.PreviewImageObjectKey != null 
-                                    ? await FileStorageProvider.GetDownloadUrlAsync(Model.PreviewImageObjectKey)
-                                    : "/raytha_admin/assets/img/NoImagePlaceholder.jpg";
-                            }
-                            <img src="@imageUrl" class="img-fluid w-100 h-100" alt="Preview Image" />
-                            <div id="uploadAssets"
-                                 data-controller="themes--uploadpreviewimage"
-                                 data-themes--uploadpreviewimage-fieldid-value="previewImage"
-                                 data-themes--uploadpreviewimage-pathbase-value="@Model.PathBase"
-                                 data-themes--uploadpreviewimage-themeid-value="@Model.Id">
-
-                                <div id="previewImage-uppy" data-themes--uploadpreviewimage-target="uppyContainer"></div>
-                            </div>
-                        </div>
-                    </div>
                     <button type="submit" class="btn btn-success mt-4">Save</button>
                 </form>
 
                 <hr/>
-                @if (!Model.IsActive)
+                @if (CurrentOrganization.ActiveThemeId != Model.Id)
                 {
                     <form asp-route="themessetasactivetheme" method="post" class="py-4" asp-route-id="@Model.Id">
                         <div class="col-lg-12">

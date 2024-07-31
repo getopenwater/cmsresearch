@@ -23,11 +23,5 @@ public class ViewConfiguration : IEntityTypeConfiguration<View>
             .WithMany()
             .HasForeignKey(b => b.LastModifierUserId)
             .OnDelete(DeleteBehavior.NoAction);
-
-        builder
-            .HasOne(v => v.WebTemplate)
-            .WithMany()
-            .HasForeignKey(v => v.WebTemplateId)
-            .OnDelete(DeleteBehavior.NoAction);
     }
 }

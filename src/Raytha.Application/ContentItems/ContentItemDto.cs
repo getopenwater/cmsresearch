@@ -16,7 +16,9 @@ public record ContentItemDto : BaseEntityDto
     public DateTime? LastModificationTime { get; init; }
     public bool IsPublished { get; init; }
     public bool IsDraft { get; init; }
-    public ShortGuid WebTemplateId { get; init; }
+
+    [JsonIgnore]
+    public ShortGuid? WebTemplateId { get; init; }
     public ShortGuid ContentTypeId { get; init; }
 
     [JsonIgnore]
@@ -32,11 +34,11 @@ public record ContentItemDto : BaseEntityDto
     public dynamic PublishedContent { get; init; }
     public dynamic DraftContent { get; init; }
 
-    public static Expression<Func<ContentItem, ContentItemDto>> GetProjection()
+    public static Expression<Func<ContentItem, WebTemplate, ContentItemDto>> GetProjection()
     {
-        return entity => GetProjection(entity);
+        return (entity, webTemplate) => GetProjection(entity, webTemplate);
     }
-    public static ContentItemDto GetProjection(ContentItem entity)
+    public static ContentItemDto GetProjection(ContentItem entity, WebTemplate? webTemplate)
     {
         return new ContentItemDto
         {
@@ -47,8 +49,8 @@ public record ContentItemDto : BaseEntityDto
             LastModificationTime = entity.LastModificationTime,
             IsDraft = entity.IsDraft,
             IsPublished = entity.IsPublished,
-            WebTemplateId = entity.WebTemplateId,
-            WebTemplate = WebTemplateDto.GetProjection(entity.WebTemplate),
+            WebTemplateId = webTemplate?.Id,
+            WebTemplate = WebTemplateDto.GetProjection(webTemplate),
             ContentTypeId = entity.ContentTypeId,
             ContentType = ContentTypeDto.GetProjection(entity.ContentType),
             PrimaryField = entity.PrimaryField,

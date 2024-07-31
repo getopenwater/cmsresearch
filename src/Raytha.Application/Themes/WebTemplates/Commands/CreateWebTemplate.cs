@@ -5,7 +5,6 @@ using Raytha.Application.Common.Exceptions;
 using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Models;
 using Raytha.Application.Common.Utils;
-using Raytha.Application.Themes.Commands;
 using Raytha.Domain.Entities;
 
 namespace Raytha.Application.Themes.WebTemplates.Commands;
@@ -55,7 +54,7 @@ public class CreateWebTemplate
                     .Any(wt => wt.DeveloperName == request.DeveloperName.ToDeveloperName());
 
                 if (anyAlreadyExistWithDeveloperName)
-                    context.AddFailure("A web-template with that developer name already exists.");
+                    context.AddFailure("A template with that developer name already exists.");
             });
         }
     }
@@ -63,21 +62,14 @@ public class CreateWebTemplate
     public class Handler : IRequestHandler<Command, CommandResponseDto<ShortGuid>>
     {
         private readonly IRaythaDbContext _db;
-        private readonly IMediator _mediator;
 
-        public Handler(IRaythaDbContext db, IMediator mediator)
+        public Handler(IRaythaDbContext db)
         {
             _db = db;
-            _mediator = mediator;
         }
 
         public async Task<CommandResponseDto<ShortGuid>> Handle(Command request, CancellationToken cancellationToken)
         {
-            await _mediator.Send(new CreateThemeRevision.Command
-            {
-                ThemeId = request.ThemeId,
-            }, cancellationToken);
-
             var entity = new WebTemplate
             {
                 Id = Guid.NewGuid(),
@@ -89,10 +81,10 @@ public class CreateWebTemplate
                 IsBuiltInTemplate = false,
                 AllowAccessForNewContentTypes = request.AllowAccessForNewContentTypes,
                 DeveloperName = request.DeveloperName.ToDeveloperName(),
-                TemplateAccessToModelDefinitions = request.TemplateAccessToModelDefinitions?.Select(guid => new WebTemplateAccessToModelDefinition
+                TemplateAccessToModelDefinitions = request.TemplateAccessToModelDefinitions?.Select(p => new WebTemplateAccessToModelDefinition
                 {
-                    ContentTypeId = guid,
-                }).ToList()
+                    ContentTypeId = p,
+                }).ToList(),
             };
 
             await _db.WebTemplates.AddAsync(entity, cancellationToken);

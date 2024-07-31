@@ -1,7 +1,5 @@
 ﻿using System.Linq.Expressions;
-using CSharpVitamins;
 using Raytha.Application.Common.Models;
-using Raytha.Application.MediaItems;
 using Raytha.Domain.Entities;
 
 namespace Raytha.Application.Themes;
@@ -11,10 +9,7 @@ public record ThemeDto : BaseAuditableEntityDto
     public required string Title { get; init; }
     public required string DeveloperName { get; init; }
     public required string Description { get; init; }
-    public bool IsActive { get; init; }
-    public bool IsCanExport { get; init; }
-    public ShortGuid? PreviewImageMediaItemId { get; init; }
-    public MediaItemDto? PreviewImageMediaItem { get; init; }
+    public bool IsExportable { get; init; }
     public AuditableUserDto? CreatorUser { get; init; }
     public AuditableUserDto? LastModifierUser { get; init; }
 
@@ -31,10 +26,7 @@ public record ThemeDto : BaseAuditableEntityDto
             Title = entity.Title,
             DeveloperName = entity.DeveloperName,
             Description = entity.Description,
-            IsActive = entity.IsActive,
-            IsCanExport = entity.IsCanExport,
-            PreviewImageMediaItemId = entity.PreviewImageId,
-            PreviewImageMediaItem = MediaItemDto.GetProjection(entity.PreviewImage),
+            IsExportable = entity.IsExportable,
             CreatorUser = AuditableUserDto.GetProjection(entity.CreatorUser),
             CreatorUserId = entity.CreatorUserId,
             CreationTime = entity.CreationTime,

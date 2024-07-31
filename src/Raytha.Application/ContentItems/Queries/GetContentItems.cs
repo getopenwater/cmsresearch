@@ -34,7 +34,8 @@ public class GetContentItems
 
         public async Task<IQueryResponseDto<ListResultDto<ContentItemDto>>> Handle(Query request, CancellationToken cancellationToken)
         {
-            IEnumerable<ContentItemDto> items;
+            var items = new List<ContentItemDto>();
+            IEnumerable<ContentItem> queryResult;
             int count = 0;
             if (request.ViewId.HasValue && request.ViewId.Value != ShortGuid.Empty)
             {
@@ -50,7 +51,7 @@ public class GetContentItems
                 var searchOnColumns = GetSearchForView(view);
                 var filters = GetFiltersForView(view, request);
                 string finalOrderBy = GetSortForView(view, request);
-                var queryResult = _db.QueryContentItems(view.ContentTypeId,
+                queryResult = _db.QueryContentItems(view.ContentTypeId,
                                                   searchOnColumns,
                                                   request.Search,
                                                   filters,
@@ -58,7 +59,6 @@ public class GetContentItems
                                                   request.PageNumber,
                                                   finalOrderBy);
                 count = _db.CountContentItems(view.ContentTypeId, searchOnColumns, request.Search, filters);
-                items = queryResult.Select(p => ContentItemDto.GetProjection(p));
             }
             else
             {
@@ -71,10 +71,25 @@ public class GetContentItems
                 var conditionToODataUtility = new FilterConditionToODataUtility(contentType);
                 var filters = new string[] { request.Filter };
                 string finalOrderBy = !string.IsNullOrWhiteSpace(request.OrderBy) ? request.OrderBy : $"{BuiltInContentTypeField.CreationTime.DeveloperName} {SortOrder.DESCENDING}";
-                var queryResult = _db.QueryContentItems(contentType.Id, null, request.Search, filters, GetPageSizeForView(request), request.PageNumber, finalOrderBy).ToList();
+                queryResult = _db.QueryContentItems(contentType.Id, null, request.Search, filters, GetPageSizeForView(request), request.PageNumber, finalOrderBy).ToList();
                 count = _db.CountContentItems(contentType.Id, null, request.Search, filters);
-                items = queryResult.Select(p => ContentItemDto.GetProjection(p));
             }
+
+            var activeThemeId = await _entityFrameworkDb.OrganizationSettings
+                .Select(os => os.ActiveThemeId)
+                .FirstAsync(cancellationToken);
+
+            foreach (var contentItem in queryResult!)
+            {
+                var webTemplate = await _entityFrameworkDb.ThemeWebTemplateContentItemMappings
+                    .Where(wtm => wtm.ThemeId == activeThemeId)
+                    .Where(wtm => wtm.ContentItemId == contentItem.Id)
+                    .Select(wtm => wtm.WebTemplate)
+                    .FirstAsync(cancellationToken);
+
+                items.Add(ContentItemDto.GetProjection(contentItem, webTemplate!));
+            }
+
             return new QueryResponseDto<ListResultDto<ContentItemDto>>(new ListResultDto<ContentItemDto>(items, count));
         }
 

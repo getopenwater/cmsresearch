@@ -27,6 +27,7 @@ public static class ConfigureServices
         services.AddScoped<BeginExportContentItemsToCsv.BackgroundTask>();
         services.AddScoped<BeginImportContentItemsFromCsv.BackgroundTask>();
         services.AddScoped<BeginImportThemeFromUrl.BackgroundTask>();
+        services.AddScoped<SetAsActiveTheme.BackgroundTask>();
         services.AddTransient<RaythaFunctionAsBackgroundTask>();
         services.AddScoped<FieldValueConverter>();
         return services;

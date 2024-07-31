@@ -24,7 +24,6 @@ public class GetThemes
         public async Task<IQueryResponseDto<ListResultDto<ThemeDto>>> Handle(Query request, CancellationToken cancellationToken)
         {
             var query = _db.Themes
-                .Include(t => t.PreviewImage)
                 .Include(t => t.CreatorUser)
                 .Include(t => t.LastModifierUser)
                 .AsQueryable();

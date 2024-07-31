@@ -80,9 +80,8 @@ public class CreateView
                 Description = request.Description
             };
 
-            var activeThemeId = await _db.Themes
-                .Where(t => t.IsActive)
-                .Select(t => t.Id)
+            var activeThemeId = await _db.OrganizationSettings
+                .Select(os => os.ActiveThemeId)
                 .FirstAsync(cancellationToken);
 
             if (request.DuplicateFromId != ShortGuid.Empty && request.DuplicateFromId.HasValue)
@@ -91,20 +90,24 @@ public class CreateView
                 entity.Columns = originalView.Columns;
                 entity.Filter = originalView.Filter;
                 entity.Sort = originalView.Sort;
-                entity.WebTemplateId = originalView.WebTemplateId;
                 entity.DefaultNumberOfItemsPerPage = originalView.DefaultNumberOfItemsPerPage;
                 entity.MaxNumberOfItemsPerPage = originalView.MaxNumberOfItemsPerPage;
                 entity.IgnoreClientFilterAndSortQueryParams = originalView.IgnoreClientFilterAndSortQueryParams;
 
-                var themeWebTemplatesMapping = new ThemeWebTemplatesMapping
+                var originalViewWebTemplateId = await _db.ThemeWebTemplateViewMappings
+                    .Where(wtv => wtv.ThemeId == activeThemeId)
+                    .Where(wtv => wtv.ViewId == originalView.Id)
+                    .Select(wtv => wtv.WebTemplateId)
+                    .FirstAsync(cancellationToken);
+
+                var webTemplateViewMapping = new ThemeWebTemplateViewMapping
                 {
-                    Id = Guid.NewGuid(),
                     ThemeId = activeThemeId,
-                    WebTemplateId = originalView.WebTemplateId,
+                    WebTemplateId = originalViewWebTemplateId,
                     ViewId = entity.Id,
                 };
 
-                await _db.ThemeWebTemplatesMappings.AddAsync(themeWebTemplatesMapping, cancellationToken);
+                await _db.ThemeWebTemplateViewMappings.AddAsync(webTemplateViewMapping, cancellationToken);
             }
             else
             {
@@ -130,11 +133,18 @@ public class CreateView
 
                 var defaultTemplateId = await _db.WebTemplates
                     .Where(wt => wt.ThemeId == activeThemeId)
-                    .Where(wt => wt.DeveloperName == BuiltInWebTemplate.ContentItemListViewPage)
+                    .Where(wt => wt.DeveloperName == BuiltInWebTemplate.ContentItemListViewPage.DeveloperName)
                     .Select(wt => wt.Id)
                     .FirstAsync(cancellationToken);
 
-                entity.WebTemplateId = defaultTemplateId;
+                var webTemplateViewMapping = new ThemeWebTemplateViewMapping
+                {
+                    ThemeId = activeThemeId,
+                    ViewId = entity.Id,
+                    WebTemplateId = defaultTemplateId,
+                };
+
+                await _db.ThemeWebTemplateViewMappings.AddAsync(webTemplateViewMapping, cancellationToken);
             }
 
             var path = GetRoutePath(request.DeveloperName, newEntityId, request.ContentTypeId.Guid);

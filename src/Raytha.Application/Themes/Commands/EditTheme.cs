@@ -55,11 +55,6 @@ public class EditTheme
             theme.Title = request.Title;
             theme.Description = request.Description;
 
-            await _mediator.Send(new CreateThemeRevision.Command
-            {
-                ThemeId = request.Id,
-            }, cancellationToken);
-
             _db.Themes.Update(theme);
 
             await _db.SaveChangesAsync(cancellationToken);

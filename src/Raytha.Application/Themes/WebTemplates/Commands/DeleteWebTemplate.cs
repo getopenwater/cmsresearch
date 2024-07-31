@@ -5,7 +5,6 @@ using Raytha.Application.Common.Exceptions;
 using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Models;
 using Raytha.Application.Common.Utils;
-using Raytha.Application.Themes.Commands;
 
 namespace Raytha.Application.Themes.WebTemplates.Commands;
 
@@ -38,14 +37,21 @@ public class DeleteWebTemplate
                 if (entity == null)
                     throw new NotFoundException("Template", request.Id);
 
-                var anyContentItemsUsingTemplate = db.ContentItems.Any(ci => ci.WebTemplateId == entity.Id);
+
+                var anyContentItemsUsingTemplate = db.ThemeWebTemplateContentItemMappings
+                    .Where(wtm => wtm.ThemeId == request.ThemeId.Guid)
+                    .Any(wtm => wtm.WebTemplateId == entity.Id);
+
                 if (anyContentItemsUsingTemplate)
                 {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "This template is currently being used by content items. You must change the template those content items are using before deleting this one.");
                     return;
                 }
 
-                var anyViewsUsingTemplate = db.Views.Any(v => v.WebTemplateId == entity.Id);
+                var anyViewsUsingTemplate = db.ThemeWebTemplateViewMappings
+                    .Where(wtm => wtm.ThemeId == request.ThemeId.Guid)
+                    .Any(wtm => wtm.WebTemplateId == entity.Id);
+
                 if (anyViewsUsingTemplate)
                 {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "This template is currently being used by list views. You must change the template those list views are using before deleting this one.");
@@ -87,21 +93,14 @@ public class DeleteWebTemplate
     public class Handler : IRequestHandler<Command, CommandResponseDto<ShortGuid>>
     {
         private readonly IRaythaDbContext _db;
-        private readonly IMediator _mediator;
 
-        public Handler(IRaythaDbContext db, IMediator mediator)
+        public Handler(IRaythaDbContext db)
         {
             _db = db;
-            _mediator = mediator;
         }
 
         public async Task<CommandResponseDto<ShortGuid>> Handle(Command request, CancellationToken cancellationToken)
         {
-            await _mediator.Send(new CreateThemeRevision.Command
-            {
-                ThemeId = request.ThemeId,
-            }, cancellationToken);
-
             var entity = _db.WebTemplates
                 .Where(wt => wt.ThemeId == request.ThemeId.Guid)
                 .First(p => p.Id == request.Id.Guid);

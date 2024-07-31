@@ -47,9 +47,8 @@ public class EditContentItemSettings
 
                 contentTypeInRoutePath.ValidateContentTypeInRoutePathMatchesValue(entity.ContentType.DeveloperName);
 
-                var activeThemeId = db.Themes
-                    .Where(t => t.IsActive)
-                    .Select(t => t.Id)
+                var activeThemeId = db.OrganizationSettings
+                    .Select(os => os.ActiveThemeId)
                     .First();
 
                 var template = db.WebTemplates
@@ -100,37 +99,21 @@ public class EditContentItemSettings
                 .Include(p => p.Route)
                 .First(p => p.Id == request.Id.Guid);
 
-            entity.WebTemplateId = request.TemplateId;
             entity.Route.Path = request.RoutePath.ToUrlSlug();
-            entity.AddDomainEvent(new ContentItemUpdatedEvent(entity));
 
-            var activeThemeId = await _db.Themes
-                .Where(t => t.IsActive)
-                .Select(t => t.Id)
+            var activeThemeId = await _db.OrganizationSettings
+                .Select(os => os.ActiveThemeId)
                 .FirstAsync(cancellationToken);
 
-            var themeWebTemplateMapping = await _db.ThemeWebTemplatesMappings
+            var webTemplateContentItemMapping = await _db.ThemeWebTemplateContentItemMappings
                 .Where(wtm => wtm.ThemeId == activeThemeId)
-                .Where(wtm => wtm.ContentItemId == entity.Id)
-                .FirstOrDefaultAsync(cancellationToken);
+                .FirstAsync(wtm => wtm.ContentItemId == entity.Id, cancellationToken);
 
-            if (themeWebTemplateMapping == null)
-            {
-                await _db.ThemeWebTemplatesMappings.AddAsync(new ThemeWebTemplatesMapping
-                {
-                    Id = Guid.NewGuid(),
-                    ThemeId = activeThemeId,
-                    WebTemplateId = request.TemplateId.Guid,
-                    ContentItemId = entity.Id,
-                }, cancellationToken);
-            }
-            else
-            {
-                themeWebTemplateMapping.WebTemplateId = request.TemplateId;
+            webTemplateContentItemMapping.WebTemplateId = request.TemplateId;
+            _db.ThemeWebTemplateContentItemMappings.Update(webTemplateContentItemMapping);
 
-                _db.ThemeWebTemplatesMappings.Update(themeWebTemplateMapping);
-            }
-
+            entity.AddDomainEvent(new ContentItemUpdatedEvent(entity));
+            
             await _db.SaveChangesAsync(cancellationToken);
 
             return new CommandResponseDto<ShortGuid>(entity.Id);

@@ -44,10 +44,8 @@ public class CreateContentType
                     return;
                 }
 
-                
-                var activeThemeId = db.Themes
-                    .Where(t => t.IsActive)
-                    .Select(t => t.Id)
+                var activeThemeId = db.OrganizationSettings
+                    .Select(os => os.ActiveThemeId)
                     .First();
 
                 var anyAvailableTemplates = db.WebTemplates
@@ -121,16 +119,14 @@ public class CreateContentType
                     ViewId = newViewId,
                     Path = $"{request.DeveloperName.ToDeveloperName()}"
                 },
-                Columns = new[] { BuiltInContentTypeField.PrimaryField.DeveloperName, BuiltInContentTypeField.CreationTime.DeveloperName, BuiltInContentTypeField.Template.DeveloperName },
+                Columns = new[] { BuiltInContentTypeField.PrimaryField.DeveloperName, BuiltInContentTypeField.CreationTime.DeveloperName, },
                 IsPublished = true
             };
 
             _db.Views.Add(newView);
 
-            
-            var activeThemeId = await _db.Themes
-                .Where(t => t.IsActive)
-                .Select(t => t.Id)
+            var activeThemeId = await _db.OrganizationSettings
+                .Select(os => os.ActiveThemeId)
                 .FirstAsync(cancellationToken);
 
             var defaultWebTemplates = await _db.WebTemplates
@@ -150,7 +146,15 @@ public class CreateContentType
 
             var defaultContentListView = defaultWebTemplates.FirstOrDefault(p => p.DeveloperName == BuiltInWebTemplate.ContentItemListViewPage.DeveloperName) ?? defaultWebTemplates.First();
 
-            newView.WebTemplateId = defaultContentListView.Id;
+            var webTemplateViewMapping = new ThemeWebTemplateViewMapping
+            {
+                Id = Guid.NewGuid(),
+                ThemeId = activeThemeId,
+                ViewId = newViewId,
+                WebTemplateId = defaultContentListView.Id,
+            };
+
+            await _db.ThemeWebTemplateViewMappings.AddAsync(webTemplateViewMapping, cancellationToken);
 
             var roles = _db.Roles
                 .Include(p => p.ContentTypeRolePermissions)

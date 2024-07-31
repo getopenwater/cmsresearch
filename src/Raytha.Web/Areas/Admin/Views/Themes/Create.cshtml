@@ -48,25 +48,8 @@
                             <label class="form-check-label" asp-for="InsertDefaultThemeMediaItems"></label>
                             <div class="invalid-feedback">@Model.ErrorMessageFor("InsertDefaultThemeMediaItems")</div>
                         </div>
-                        <div class="form-text">Add media items that are included in web-templates (bootstrap.min.cs, bootstrap.bundle.min.js, favicon.ico)</div>
+                        <div class="form-text">Add media items that are included in web-templates (bootstrap.min.cs, bootstrap.bundle.min.js, favicon.ico, raythadotcom_screenshot.webp)</div>
                     </div>
-                    <div class="col-lg-12 col-md-12">
-                        <div class="mb-3">
-                            <label class="form-label" asp-for="ImagePreview"></label>
-                            <div id="uploadAssets"
-                                 data-controller="themes--uploadpreviewimage"
-                                 data-themes--uploadpreviewimage-fieldid-value="previewImage"
-                                 data-themes--uploadpreviewimage-usedirectuploadtocloud-value="@Model.UseDirectUploadToCloud"
-                                 data-themes--uploadpreviewimage-pathbase-value="@Model.PathBase">
-
-                                <div id="previewImage-uppy" data-themes--uploadpreviewimage-target="uppyContainer"></div>
-                                <input type="text" class="form-label" data-themes--uploadpreviewimage-target="imageBase64" asp-for="ImageBase64" hidden="true"/>
-                                <input type="text" class="form-label" data-themes--uploadpreviewimage-target="imageFileName" asp-for="ImageFileName" hidden="true" />
-                                <input type="text" class="form-label" data-themes--uploadpreviewimage-target="imageFileType" asp-for="ImageFileType" hidden="true" />
-                            </div>
-                        </div>
-                    </div>
-
                     <button type="submit" class="btn btn-success mt-4">Save</button>
                 </form>
             </div>

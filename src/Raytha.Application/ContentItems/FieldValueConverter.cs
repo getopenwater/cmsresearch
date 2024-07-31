@@ -30,7 +30,6 @@ public class FieldValueConverter
             { BuiltInContentTypeField.IsPublished, item.IsPublished.YesOrNo() },
             { BuiltInContentTypeField.IsDraft, item.IsDraft.YesOrNo() },
             { BuiltInContentTypeField.PrimaryField, item.PrimaryField },
-            { "Template", item.WebTemplate.Label }
         };
 
         //Content type fields

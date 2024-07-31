@@ -148,17 +148,17 @@ public class BeginImportThemeFromUrl
 
                 foreach (var mediaItemInThemePackage in themePackage.MediaItems)
                 {
+                    var data = await GetDataFromUrl(mediaItemInThemePackage.DownloadUrl, cancellationToken);
                     var contentType = FileStorageUtility.GetMimeType(mediaItemInThemePackage.FileName);
-                    var file = await GetDataFromUrl(mediaItemInThemePackage.DownloadUrl, cancellationToken);
                     var objectKey = FileStorageUtility.CreateObjectKeyFromIdAndFileName(theme.DeveloperName, mediaItemInThemePackage.FileName);
 
-                    await _fileStorageProvider.SaveAndGetDownloadUrlAsync(file, objectKey, mediaItemInThemePackage.FileName, contentType, DateTime.MaxValue);
+                    await _fileStorageProvider.SaveAndGetDownloadUrlAsync(data, objectKey, mediaItemInThemePackage.FileName, contentType, FileStorageUtility.GetDefaultExpiry());
 
                     var mediaItem = new MediaItem
                     {
                         Id = Guid.NewGuid(),
                         FileName = mediaItemInThemePackage.FileName,
-                        Length = file.Length,
+                        Length = data.Length,
                         ContentType = contentType,
                         ObjectKey = objectKey,
                         FileStorageProvider = _fileStorageProvider.GetName(),
@@ -170,11 +170,6 @@ public class BeginImportThemeFromUrl
                         MediaItemId = mediaItem.Id,
                         ThemeId = theme.Id,
                     });
-
-                    if (mediaItemInThemePackage.IsPreviewImage)
-                    {
-                        theme.PreviewImageId = mediaItem.Id;
-                    }
 
                     mediaItems.Add(mediaItem);
                 }

@@ -12,11 +12,11 @@ public class EditThemeForExport
 {
     public record Command : LoggableEntityRequest<CommandResponseDto<ShortGuid>>
     {
-        public required bool IsCanExport { get; init; }
+        public required bool IsExportable { get; init; }
 
         public static Command Empty() => new()
         {
-            IsCanExport = false,
+            IsExportable = false,
         };
     }
 
@@ -46,7 +46,7 @@ public class EditThemeForExport
             var entity = await _db.Themes
                 .FirstAsync(rt => rt.Id == request.Id.Guid, cancellationToken);
 
-            entity.IsCanExport = request.IsCanExport;
+            entity.IsExportable = request.IsExportable;
 
             await _db.SaveChangesAsync(cancellationToken);
 

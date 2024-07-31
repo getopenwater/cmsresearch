@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Models.RenderModels;
-using Raytha.Application.Themes.Queries;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -45,12 +44,7 @@ public class ErrorActionViewResult : IActionResult
         httpContext.Response.StatusCode = _httpStatusCode;
         httpContext.Response.ContentType = ContentType;
 
-        var currentThemeResponse = await mediator.Send(new GetActiveTheme.Query());
-        var template = await mediator.Send(new GetWebTemplateByDeveloperName.Query
-        {
-            ThemeId = currentThemeResponse.Result.Id,
-            DeveloperName = _view
-        });
+        var template = await mediator.Send(new GetActiveThemeWebTemplateByDeveloperName.Query { DeveloperName = _view });
         var source = template.Result.Content;
         var sourceWithParents = WebTemplateExtensions.ContentAssembledFromParents(source, template.Result.ParentTemplate);
 

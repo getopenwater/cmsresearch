@@ -24,13 +24,14 @@ public class DeleteTheme
             RuleFor(x => x).Custom((request, context) =>
             {
                 var entity = db.Themes.FirstOrDefault(t => t.Id == request.Id.Guid);
+                var activeThemeId = db.OrganizationSettings.Select(os => os.ActiveThemeId).First();
 
                 if (entity == null)
                 {
                     throw new NotFoundException("Theme", request.Id);
                 }
 
-                if (entity.IsActive)
+                if (entity.Id == activeThemeId)
                 {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "You cannot delete an active theme. Set another theme as the active theme before deleting this one.");
 
@@ -60,7 +61,6 @@ public class DeleteTheme
         {
             var theme = await _db.Themes
                 .Include(t => t.WebTemplates)
-                .Include(t => t.WebTemplatesMappings)
                 .FirstAsync(t => t.Id == request.Id.Guid, cancellationToken);
 
             _db.Themes.Remove(theme);

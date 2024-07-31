@@ -24,7 +24,6 @@ public class GetThemeById
         public async Task<IQueryResponseDto<ThemeDto>> Handle(Query request, CancellationToken cancellationToken)
         {
             var entity = await _db.Themes
-                .Include(t => t.PreviewImage)
                 .FirstOrDefaultAsync(t => t.Id == request.Id.Guid, cancellationToken);
 
             if (entity == null)

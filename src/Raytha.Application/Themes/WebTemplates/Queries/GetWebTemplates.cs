@@ -44,10 +44,8 @@ public class GetWebTemplates
             if (!string.IsNullOrEmpty(request.Search))
             {
                 var searchQuery = request.Search.ToLower();
-                query = query.Where(wt => wt.Label!.ToLower().Contains(searchQuery) ||
-                                          wt.DeveloperName!.ToLower().Contains(searchQuery) ||
-                                          (wt.LastModifierUser != null && (wt.LastModifierUser.FirstName.ToLower().Contains(searchQuery) ||
-                                                                           wt.LastModifierUser.LastName.ToLower().Contains(searchQuery))));
+                query = query.Where(wt => wt.Label!.ToLower().Contains(searchQuery) || wt.DeveloperName!.ToLower().Contains(searchQuery)
+                                                    || (wt.LastModifierUser != null && (wt.LastModifierUser.FirstName.ToLower().Contains(searchQuery) || wt.LastModifierUser.LastName.ToLower().Contains(searchQuery))));
             }
 
             if (request.ContentTypeId.HasValue)

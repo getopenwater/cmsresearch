@@ -27,7 +27,6 @@ public class GetMediaItemsByThemeId
         {
             var query = await _db.ThemeAccessToMediaItems
                 .Where(tmi => tmi.ThemeId == request.ThemeId.Guid)
-                .Include(tmi => tmi.MediaItem)
                 .Select(tmi => tmi.MediaItem)
                 .ToArrayAsync(cancellationToken);
 

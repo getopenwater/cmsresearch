@@ -1,7 +1,6 @@
 ﻿using CSharpVitamins;
 using FluentValidation;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Raytha.Application.Common.Exceptions;
 using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Models;
@@ -19,7 +18,6 @@ public class CreateMediaItem
         public required string FileStorageProvider { get; init; }
         public required string ObjectKey { get; init; }
         public ShortGuid? ThemeId { get; init; }
-        public bool IsThemePreviewImage { get; init; }
 
         public static Command Empty() => new()
         {
@@ -84,16 +82,6 @@ public class CreateMediaItem
                 };
 
                 await _db.ThemeAccessToMediaItems.AddAsync(themeAccessToMediaItem, cancellationToken);
-
-                if (request.IsThemePreviewImage)
-                {
-                    var theme = await _db.Themes
-                        .FirstAsync(t => t.Id == request.ThemeId.Value.Guid, cancellationToken);
-
-                    theme.PreviewImageId = entity.Id;
-
-                    _db.Themes.Update(theme);
-                }
             }
 
             await _db.SaveChangesAsync(cancellationToken);

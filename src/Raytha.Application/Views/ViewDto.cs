@@ -24,15 +24,15 @@ namespace Raytha.Application.Views
         public ShortGuid? RouteId { get; init; }
         public string RoutePath { get; init; }
         public bool IsPublished { get; init; }
-        public ShortGuid WebTemplateId { get; init; }
-        public WebTemplateDto WebTemplate { get; init; }
+        public ShortGuid? WebTemplateId { get; init; }
+        public WebTemplateDto? WebTemplate { get; init; }
 
-        public static Expression<Func<View, ViewDto>> GetProjection()
+        public static Expression<Func<View, WebTemplate?, ViewDto>> GetProjection()
         {
-            return entity => GetProjection(entity);
+            return (entity, webTemplate) => GetProjection(entity, webTemplate);
         }
 
-        public static ViewDto GetProjection(View entity)
+        public static ViewDto GetProjection(View entity, WebTemplate? webTemplate)
         {
             if (entity == null)
                 return null;
@@ -56,8 +56,8 @@ namespace Raytha.Application.Views
                 RouteId = entity.RouteId,
                 RoutePath = entity.Route.Path,
                 IsPublished = entity.IsPublished,
-                WebTemplate = WebTemplateDto.GetProjection(entity.WebTemplate),
-                WebTemplateId = entity.WebTemplateId,
+                WebTemplate = WebTemplateDto.GetProjection(webTemplate),
+                WebTemplateId = webTemplate?.Id,
                 IgnoreClientFilterAndSortQueryParams = entity.IgnoreClientFilterAndSortQueryParams,
                 DefaultNumberOfItemsPerPage = entity.DefaultNumberOfItemsPerPage,
                 MaxNumberOfItemsPerPage = entity.MaxNumberOfItemsPerPage

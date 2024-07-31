@@ -82,7 +82,6 @@ public class DeleteContentItem
                 _PublishedContent = entityToDelete._PublishedContent,
                 ContentTypeId = entityToDelete.ContentTypeId,
                 OriginalContentItemId = request.Id.Guid,
-                WebTemplateId = entityToDelete.WebTemplateId,
                 PrimaryField = primaryFieldValue,
                 RoutePath = entityToDelete.Route.Path
             };
@@ -90,13 +89,13 @@ public class DeleteContentItem
             _entityFrameworkDb.ContentItems.Remove(entityToDelete);
             _entityFrameworkDb.Routes.Remove(entityToDelete.Route);
 
-            entityToDelete.AddDomainEvent(new ContentItemDeletedEvent(entityToDelete));
-
-            var webTemplatesMapping = await _entityFrameworkDb.ThemeWebTemplatesMappings
+            var webTemplateContentItemMappings = await _entityFrameworkDb.ThemeWebTemplateContentItemMappings
                 .Where(wtm => wtm.ContentItemId == entityToDelete.Id)
                 .ToListAsync(cancellationToken);
 
-            _entityFrameworkDb.ThemeWebTemplatesMappings.RemoveRange(webTemplatesMapping);
+            _entityFrameworkDb.ThemeWebTemplateContentItemMappings.RemoveRange(webTemplateContentItemMappings);
+
+            entityToDelete.AddDomainEvent(new ContentItemDeletedEvent(entityToDelete));
 
             await _entityFrameworkDb.SaveChangesAsync(cancellationToken);
             return new CommandResponseDto<ShortGuid>(request.Id);

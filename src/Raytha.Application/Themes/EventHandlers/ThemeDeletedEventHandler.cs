@@ -20,7 +20,6 @@ public class ThemeDeletedEventHandler : INotificationHandler<ThemeDeletedEvent>
     {
         var mediaItems = await _db.ThemeAccessToMediaItems
             .Where(tmi => tmi.ThemeId == notification.ThemeId)
-            .Include(tmi => tmi.MediaItem)
             .Select(tmi => tmi.MediaItem)
             .ToListAsync(cancellationToken);
 
@@ -30,6 +29,18 @@ public class ThemeDeletedEventHandler : INotificationHandler<ThemeDeletedEvent>
 
             await _fileStorageProvider.DeleteAsync(mediaItem!.ObjectKey);
         }
+
+        var themeWebTemplateContentItemMappings = await _db.ThemeWebTemplateContentItemMappings
+            .Where(wtm => wtm.ThemeId == notification.ThemeId)
+            .ToListAsync(cancellationToken);
+
+        _db.ThemeWebTemplateContentItemMappings.RemoveRange(themeWebTemplateContentItemMappings);
+
+        var themeWebTemplateViewMappings = await _db.ThemeWebTemplateViewMappings
+            .Where(wtm => wtm.ThemeId == notification.ThemeId)
+            .ToListAsync(cancellationToken);
+
+        _db.ThemeWebTemplateViewMappings.RemoveRange(themeWebTemplateViewMappings);
 
         await _db.SaveChangesAsync(cancellationToken);
     }

@@ -72,12 +72,11 @@ public class ContentItemsController : BaseController
     [Route($"{RAYTHA_ROUTE_PREFIX}/{{{RouteConstants.CONTENT_TYPE_DEVELOPER_NAME}}}/create", Name = "contentitemscreate")]
     public async Task<IActionResult> Create()
     {
-        var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
         var webTemplates = await Mediator.Send(new GetWebTemplates.Query
         {
-            ThemeId = themeResponse.Result.Id,
+            ThemeId = CurrentOrganization.ActiveThemeId,
             ContentTypeId = CurrentView.ContentTypeId,
-            PageSize = int.MaxValue
+            PageSize = int.MaxValue,
         });
 
         var fieldValues = CurrentView.ContentType.ContentTypeFields.Select(p => new FieldValue_ViewModel
@@ -135,10 +134,9 @@ public class ContentItemsController : BaseController
         {
             SetErrorMessage("There was an error attempting to save this page. See the error below.", response.GetErrors());
 
-            var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
             var webTemplates = await Mediator.Send(new GetWebTemplates.Query
             {
-                ThemeId = themeResponse.Result.Id,
+                ThemeId = CurrentOrganization.ActiveThemeId,
                 ContentTypeId = CurrentView.ContentTypeId,
                 PageSize = int.MaxValue
             });
@@ -428,18 +426,17 @@ public class ContentItemsController : BaseController
     {
         var response = await Mediator.Send(new GetContentItemById.Query { Id = id });
 
-        var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
         var webTemplates = await Mediator.Send(new GetWebTemplates.Query
         {
-            ThemeId = themeResponse.Result.Id,
+            ThemeId = CurrentOrganization.ActiveThemeId,
             ContentTypeId = CurrentView.ContentTypeId,
-            PageSize = int.MaxValue
+            PageSize = int.MaxValue,
         });
 
         var viewModel = new ContentItemsSettings_ViewModel
         {
             Id = response.Result.Id,
-            TemplateId = response.Result.WebTemplate.Id,
+            TemplateId = response.Result.WebTemplateId,
             IsHomePage = CurrentOrganization.HomePageId == response.Result.Id,
             RoutePath = response.Result.RoutePath,
             WebsiteUrl = CurrentOrganization.WebsiteUrl.TrimEnd('/') + CurrentOrganization.PathBase + "/",
@@ -472,10 +469,9 @@ public class ContentItemsController : BaseController
         {
             SetErrorMessage("There was an error attempting to save this page. See the error below.", editResponse.GetErrors());
 
-            var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
             var webTemplatesResponse = await Mediator.Send(new GetWebTemplates.Query
             {
-                ThemeId = themeResponse.Result.Id,
+                ThemeId = CurrentOrganization.ActiveThemeId,
                 ContentTypeId = CurrentView.ContentTypeId,
                 PageSize = int.MaxValue,
             });

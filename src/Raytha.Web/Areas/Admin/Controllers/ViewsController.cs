@@ -167,10 +167,10 @@ public class ViewsController : BaseController
     public async Task<IActionResult> PublicSettings()
     {
         var response = await Mediator.Send(new GetViewById.Query { Id = CurrentView.Id });
-        var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
+
         var webTemplates = await Mediator.Send(new GetWebTemplates.Query
         {
-            ThemeId = themeResponse.Result.Id,
+            ThemeId = CurrentOrganization.ActiveThemeId,
             ContentTypeId = CurrentView.ContentTypeId,
             PageSize = int.MaxValue,
         });
@@ -220,10 +220,9 @@ public class ViewsController : BaseController
         {
             SetErrorMessage("There were validation errors with your form submission. Please correct the fields below.", response.GetErrors());
 
-            var themeResponse = await Mediator.Send(new GetActiveTheme.Query());
             var webTemplatesResponse = await Mediator.Send(new GetWebTemplates.Query
             {
-                ThemeId = themeResponse.Result.Id,
+                ThemeId = CurrentOrganization.ActiveThemeId,
                 ContentTypeId = CurrentView.ContentTypeId,
                 PageSize = int.MaxValue
             });
@@ -530,16 +529,13 @@ public class ViewsController : BaseController
         }).ToList();
 
         var builtInListItems = BuiltInContentTypeField.ReservedContentTypeFields
-            .Where(p => p.DeveloperName != BuiltInContentTypeField.Template &&
-                        p.DeveloperName != BuiltInContentTypeField.CreatorUser &&
-                        p.DeveloperName != BuiltInContentTypeField.LastModifierUser)
-
+            .Where(p => p.DeveloperName != BuiltInContentTypeField.CreatorUser && p.DeveloperName != BuiltInContentTypeField.LastModifierUser)
             .Select(p => new ViewsFilterContentTypeField_ViewModel
-        {
-            Label = p.Label,
-            DeveloperName = p.DeveloperName,
-            FieldType = p.FieldType
-        }).ToList();
+            {
+                Label = p.Label,
+                DeveloperName = p.DeveloperName,
+                FieldType = p.FieldType
+            }).ToList();
 
         contentTypeFields.AddRange(builtInListItems);
 

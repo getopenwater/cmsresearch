@@ -24,7 +24,6 @@ public class GetViewById
         public async Task<IQueryResponseDto<ViewDto>> Handle(Query request, CancellationToken cancellationToken)
         {
             var entity = _db.Views
-                .Include(p => p.WebTemplate)
                 .Include(p => p.Route)
                 .Include(p => p.ContentType)
                 .ThenInclude(p => p.ContentTypeFields)
@@ -33,7 +32,20 @@ public class GetViewById
             if (entity == null)
                 throw new NotFoundException("View", request.Id);
 
-            return new QueryResponseDto<ViewDto>(ViewDto.GetProjection(entity));
+            var activeThemeId = await _db.OrganizationSettings
+                .Select(os => os.ActiveThemeId)
+                .FirstAsync(cancellationToken);
+
+            var webTemplate = await _db.ThemeWebTemplateViewMappings
+                .Where(wtm => wtm.ThemeId == activeThemeId)
+                .Where(wtm => wtm.ViewId == entity.Id)
+                .Select(wtm => wtm.WebTemplate)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (webTemplate == null)
+                throw new NotFoundException("webTemplate", request.Id);
+
+            return new QueryResponseDto<ViewDto>(ViewDto.GetProjection(entity, webTemplate));
         }
     }
 }

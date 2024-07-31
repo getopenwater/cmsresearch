@@ -6,7 +6,6 @@ using Raytha.Application.Common.Exceptions;
 using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Models;
 using Raytha.Application.Common.Utils;
-using Raytha.Application.Themes.Commands;
 using Raytha.Domain.Entities;
 
 namespace Raytha.Application.Themes.WebTemplates.Commands;
@@ -16,16 +15,19 @@ public class EditWebTemplate
     public record Command : LoggableEntityRequest<CommandResponseDto<ShortGuid>>
     {
         public required ShortGuid ThemeId { get; init; }
-        public string Label { get; init; } = null!;
-        public string Content { get; init; } = null!;
+        public required string Label { get; init; }
+        public required string Content { get; init; }
         public bool IsBaseLayout { get; init; }
         public ShortGuid? ParentTemplateId { get; init; }
         public bool AllowAccessForNewContentTypes { get; init; }
-        public IEnumerable<ShortGuid> TemplateAccessToModelDefinitions { get; init; } = null!;
+        public required IEnumerable<ShortGuid> TemplateAccessToModelDefinitions { get; init; }
 
         public static Command Empty() => new()
         {
             ThemeId = ShortGuid.Empty,
+            Label = string.Empty,
+            Content = string.Empty,
+            TemplateAccessToModelDefinitions = new List<ShortGuid>(),
         };
     }
 
@@ -50,17 +52,18 @@ public class EditWebTemplate
                 if (entity == null)
                     throw new NotFoundException("Template", request.Id);
 
-                var nonBaseLayoutsAllowedForNewTypes = db.WebTemplates
+                var nonBaseLayoutsAllowedForNewTypesCount = db.WebTemplates
                     .Where(wt => wt.ThemeId == request.ThemeId.Guid)
                     .Count(wt => !wt.IsBaseLayout && wt.AllowAccessForNewContentTypes);
 
-                if (nonBaseLayoutsAllowedForNewTypes == 1)
+                if (nonBaseLayoutsAllowedForNewTypesCount == 1)
                 {
                     if (entity.Id == request.Id.Guid)
                     {
                         if (request.IsBaseLayout || !request.AllowAccessForNewContentTypes)
                         {
                             context.AddFailure("AllowAccessForNewContentTypes", "This is currently the only template that new content types can access. You must have at least 1 non base layout template new content types can default to.");
+                            return;
                         }
                     }
                 }
@@ -71,12 +74,10 @@ public class EditWebTemplate
     public class Handler : IRequestHandler<Command, CommandResponseDto<ShortGuid>>
     {
         private readonly IRaythaDbContext _db;
-        private readonly IMediator _mediator;
 
-        public Handler(IRaythaDbContext db, IMediator mediator)
+        public Handler(IRaythaDbContext db)
         {
             _db = db;
-            _mediator = mediator;
         }
 
         public async Task<CommandResponseDto<ShortGuid>> Handle(Command request, CancellationToken cancellationToken)
@@ -89,6 +90,7 @@ public class EditWebTemplate
             if (request.ParentTemplateId.HasValue && request.ParentTemplateId != Guid.Empty)
             {
                 var parent = await _db.WebTemplates
+                    .Where(wt => wt.ThemeId == request.ThemeId.Guid)
                     .FirstAsync(wt => wt.Id == request.ParentTemplateId.Value.Guid, cancellationToken);
 
                 if (parent.ParentTemplateId != null)
@@ -114,11 +116,6 @@ public class EditWebTemplate
                     throw new BusinessException("This template has other templates that inherit from it.");
             }
 
-            await _mediator.Send(new CreateThemeRevision.Command
-            {
-                ThemeId = request.ThemeId,
-            }, cancellationToken);
-
             var revision = new WebTemplateRevision
             {
                 WebTemplateId = entity.Id,
@@ -138,11 +135,8 @@ public class EditWebTemplate
             }
             entity.AllowAccessForNewContentTypes = request.AllowAccessForNewContentTypes;
 
-            var accessToRemoveItemGuids = entity.TemplateAccessToModelDefinitions
-                .Select(md => (ShortGuid)md.Id)
-                .Except(request.TemplateAccessToModelDefinitions);
-
-            var accessToRemoveItems = entity.TemplateAccessToModelDefinitions?.Where(md => accessToRemoveItemGuids.Contains(md.Id));
+            var accessToRemoveItemGuids = entity.TemplateAccessToModelDefinitions.Select(p => (ShortGuid)p.Id).Except(request.TemplateAccessToModelDefinitions ?? new List<ShortGuid>());
+            var accessToRemoveItems = entity.TemplateAccessToModelDefinitions?.Where(p => accessToRemoveItemGuids.Contains(p.Id));
             var accessToAddItemGuids = request.TemplateAccessToModelDefinitions?.Except(entity.TemplateAccessToModelDefinitions?.ToList().Select(p => (ShortGuid)p.Id) ?? new List<ShortGuid>());
 
             if (accessToRemoveItems != null)
@@ -152,10 +146,10 @@ public class EditWebTemplate
 
             if (accessToAddItemGuids != null)
             {
-                _db.WebTemplateAccessToModelDefinitions.AddRange(accessToAddItemGuids.Select(guid => new WebTemplateAccessToModelDefinition
+                _db.WebTemplateAccessToModelDefinitions.AddRange(accessToAddItemGuids.Select(p => new WebTemplateAccessToModelDefinition
                 {
                     WebTemplateId = entity.Id,
-                    ContentTypeId = guid
+                    ContentTypeId = p
                 }));
             }
 

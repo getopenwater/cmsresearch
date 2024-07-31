@@ -17,9 +17,6 @@ public class CreateTheme
         public required string DeveloperName { get; init; }
         public required string Description { get; init; }
         public required bool InsertDefaultThemeMediaItems { get; init; }
-        public string? ImageBase64 { get; init; }
-        public string? ImageFileType { get; init; }
-        public string? ImageFileName { get; init; }
 
         public static Command Empty() => new()
         {
@@ -66,7 +63,7 @@ public class CreateTheme
 
             await _db.Themes.AddAsync(theme, cancellationToken);
 
-            theme.AddDomainEvent(new ThemeCreatedEvent(theme, request.ImageBase64, request.ImageFileName, request.ImageFileType, request.InsertDefaultThemeMediaItems));
+            theme.AddDomainEvent(new ThemeCreatedEvent(theme.Id, request.InsertDefaultThemeMediaItems));
 
             await _db.SaveChangesAsync(cancellationToken);
 

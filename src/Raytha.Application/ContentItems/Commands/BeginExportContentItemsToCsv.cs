@@ -122,7 +122,7 @@ public class BeginExportContentItemsToCsv
                                                 filters,
                                                 finalOrderBy))
             {
-                var contentItemAsDict = _fieldValueConverter.MapToListItemValues(ContentItemDto.GetProjection(item));
+                var contentItemAsDict = _fieldValueConverter.MapToListItemValues(ContentItemDto.GetProjection(item, null));
 
                 myExport.AddRow();
                 if (exportOnlyColumnsFromView)

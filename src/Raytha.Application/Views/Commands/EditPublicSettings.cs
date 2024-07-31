@@ -50,9 +50,8 @@ public class EditPublicSettings
                 if (entity == null)
                     throw new NotFoundException("View", request.Id);
 
-                var activeThemeId = db.Themes
-                    .Where(t => t.IsActive)
-                    .Select(t => t.Id)
+                var activeThemeId = db.OrganizationSettings
+                    .Select(os => os.ActiveThemeId)
                     .First();
 
                 var template = db.WebTemplates
@@ -98,39 +97,22 @@ public class EditPublicSettings
                 .Include(p => p.Route)
                 .First(p => p.Id == request.Id.Guid);
 
-            entity.WebTemplateId = request.TemplateId;
             entity.Route.Path = request.RoutePath.ToUrlSlug();
             entity.IsPublished = request.IsPublished;
             entity.DefaultNumberOfItemsPerPage = request.DefaultNumberOfItemsPerPage;
             entity.MaxNumberOfItemsPerPage = request.MaxNumberOfItemsPerPage;
             entity.IgnoreClientFilterAndSortQueryParams = request.IgnoreClientFilterAndSortQueryParams;
 
-            var activeThemeId = _db.Themes
-                .Where(t => t.IsActive)
-                .Select(t => t.Id)
-                .First();
+            var activeThemeId = await _db.OrganizationSettings
+                .Select(os => os.ActiveThemeId)
+                .FirstAsync(cancellationToken);
 
-            var themeWebTemplateMapping = await _db.ThemeWebTemplatesMappings
-                .Where(wtm => wtm.ThemeId == activeThemeId)
-                .Where(wtm => wtm.ViewId == entity.Id)
-                .FirstOrDefaultAsync(cancellationToken);
+            var webTemplateViewMapping = await _db.ThemeWebTemplateViewMappings
+                .Where(wtv => wtv.ThemeId == activeThemeId)
+                .FirstAsync(wtv => wtv.ViewId == entity.Id, cancellationToken);
 
-            if (themeWebTemplateMapping == null)
-            {
-                await _db.ThemeWebTemplatesMappings.AddAsync(new ThemeWebTemplatesMapping
-                {
-                    Id = Guid.NewGuid(),
-                    ThemeId = activeThemeId,
-                    WebTemplateId = request.TemplateId.Guid,
-                    ViewId = entity.Id,
-                }, cancellationToken);
-            }
-            else
-            {
-                themeWebTemplateMapping.WebTemplateId = request.TemplateId;
-
-                _db.ThemeWebTemplatesMappings.Update(themeWebTemplateMapping);
-            }
+            webTemplateViewMapping.WebTemplateId = request.TemplateId;
+            _db.ThemeWebTemplateViewMappings.Update(webTemplateViewMapping);
 
             await _db.SaveChangesAsync(cancellationToken);
             return new CommandResponseDto<ShortGuid>(entity.Id);

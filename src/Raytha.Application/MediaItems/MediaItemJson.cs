@@ -6,7 +6,6 @@ namespace Raytha.Application.MediaItems;
 public class MediaItemsJson
 {
     public required string FileName { get; init; }
-    public bool IsPreviewImage { get; set; }
     public string DownloadUrl { get; set; }
 
     public static Expression<Func<MediaItem, MediaItemsJson>> GetProjection()

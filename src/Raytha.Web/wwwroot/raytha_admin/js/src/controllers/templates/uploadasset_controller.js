@@ -135,6 +135,10 @@ export default class extends Controller {
         })
     }
 
+    disconnect() {
+       this.uppy.close();
+    }
+
     addCopyUrlItem(file) {
         var li = document.createElement("li");
         var truncated = file.name.replace(/(.{20})..+/, "$1&hellip;");

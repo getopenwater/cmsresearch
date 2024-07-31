@@ -34,8 +34,8 @@ public class ExportTheme
                 if (entity == null)
                     throw new NotFoundException("Theme", request.DeveloperName);
 
-                if (!entity.IsCanExport)
-                    context.AddFailure("IsCanExport", "The theme can not be exported");
+                if (!entity.IsExportable)
+                    context.AddFailure("IsExportable", "The theme can not be exported");
             });
         }
     }
@@ -68,8 +68,7 @@ public class ExportTheme
                 mediaItemsJson.Add(new MediaItemsJson
                 {
                     FileName = themeMediaItem!.FileName,
-                    DownloadUrl = await _fileStorageProvider.GetDownloadUrlAsync(themeMediaItem.ObjectKey),
-                    IsPreviewImage = theme.PreviewImageId == themeMediaItem.Id,
+                    DownloadUrl = await _fileStorageProvider.GetDownloadUrlAsync(themeMediaItem.ObjectKey, FileStorageUtility.GetDefaultExpiry()),
                 });
             }
 

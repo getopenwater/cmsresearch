@@ -25,12 +25,12 @@ public class GetMediaItemsByThemeId
 
         public async Task<IQueryResponseDto<IReadOnlyCollection<MediaItemDto>>> Handle(Query request, CancellationToken cancellationToken)
         {
-            var query = await _db.ThemeAccessToMediaItems
+            var mediaItems = await _db.ThemeAccessToMediaItems
                 .Where(tmi => tmi.ThemeId == request.ThemeId.Guid)
                 .Select(tmi => tmi.MediaItem)
                 .ToArrayAsync(cancellationToken);
 
-            return new QueryResponseDto<IReadOnlyCollection<MediaItemDto>>(query.Select(MediaItemDto.GetProjection).ToArray()!);
+            return new QueryResponseDto<IReadOnlyCollection<MediaItemDto>>(mediaItems.Select(MediaItemDto.GetProjection).ToArray());
         }
     }
 }

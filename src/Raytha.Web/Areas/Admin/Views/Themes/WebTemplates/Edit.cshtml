@@ -1,6 +1,4 @@
-@using Raytha.Web.Areas.Admin.Views.Themes.WebTemplates
-@using Raytha.Web.Areas.Admin.Views.Themes
-@model Raytha.Web.Areas.Admin.Views.Themes.WebTemplates.WebTemplatesEdit_ViewModel
+@model WebTemplatesEdit_ViewModel
 
 @{
     ViewData["Title"] = "Themes > Edit theme > Web templates > Edit template";
@@ -144,11 +142,11 @@
         </div>
     </div>
     @(await Html.PartialAsync("~/Areas/Admin/Views/Themes/WebTemplates/_ActionsMenu.cshtml", new WebTemplatesActionsMenu_ViewModel
-{
-    Id = Model.Id,
-    ThemeId = Model.ThemeId,
-    IsBuiltInTemplate = Model.IsBuiltInTemplate
-}))
+    {
+        Id = Model.Id,
+        ThemeId = Model.ThemeId,
+        IsBuiltInTemplate = Model.IsBuiltInTemplate
+    }))
 </div>
 <partial name="_InsertVariableMenu.cshtml" model="Model.TemplateVariables" />
 

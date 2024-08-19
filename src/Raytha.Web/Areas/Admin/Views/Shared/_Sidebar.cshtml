@@ -117,7 +117,7 @@
         </a>
       </li>
 
-      @if ((await AuthorizationService.AuthorizeAsync(User, BuiltInSystemPermission.MANAGE_SYSTEM_SETTINGS_PERMISSION)).Succeeded)
+      @if ((await AuthorizationService.AuthorizeAsync(User, BuiltInSystemPermission.MANAGE_TEMPLATES_PERMISSION)).Succeeded)
       {
           <li class="nav-item @(IsActivePage("Themes"))">
               <a asp-route="themesindex" class="nav-link d-flex justify-content-between">

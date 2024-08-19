@@ -2,6 +2,7 @@
 using CSharpVitamins;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Models;
 using Raytha.Application.Common.Utils;
@@ -78,28 +79,26 @@ public class BeginImportThemeFromUrl
 
         public async Task Execute(Guid jobId, JsonElement args, CancellationToken cancellationToken)
         {
-            var urlToDownloadJson = args.GetProperty("Url").GetString();
-            var title = args.GetProperty("Title").GetString();
-            var developerName = args.GetProperty("DeveloperName").GetString();
-            var description = args.GetProperty("Description").GetString();
+            var urlToDownloadJson = args.GetProperty("Url").GetString()!;
+            var title = args.GetProperty("Title").GetString()!;
+            var developerName = args.GetProperty("DeveloperName").GetString()!.ToDeveloperName();
+            var description = args.GetProperty("Description").GetString()!;
 
             // download json and deserialize
             var job = _db.BackgroundTasks.First(p => p.Id == jobId);
 
             job.TaskStep = 1;
             job.StatusInfo = "Beginning import. Downloading theme json package from the url.";
-            job.PercentComplete = 20;
             _db.BackgroundTasks.Update(job);
             await _db.SaveChangesAsync(cancellationToken);
 
             try
             {
-                var themePackageJson = await GetJsonFromUrl(urlToDownloadJson!, cancellationToken);
-                var themePackage = JsonSerializer.Deserialize<ThemeJson>(themePackageJson);
+                var themePackageJson = await GetJsonFromUrl(urlToDownloadJson, cancellationToken);
+                var themePackage = JsonSerializer.Deserialize<ThemeJson>(themePackageJson)!;
 
                 job.TaskStep = 2;
                 job.StatusInfo = $"Importing theme - {title}";
-                job.PercentComplete = 40;
                 _db.BackgroundTasks.Update(job);
                 await _db.SaveChangesAsync(cancellationToken);
 
@@ -107,34 +106,54 @@ public class BeginImportThemeFromUrl
                 var theme = new Theme
                 {
                     Id = themeId,
-                    Title = title!,
-                    DeveloperName = developerName!,
-                    Description = description!,
+                    Title = title,
+                    DeveloperName = developerName,
+                    Description = description,
                 };
-
-                _db.Themes.Add(theme);
 
                 // importing web-templates
                 job.TaskStep = 3;
                 job.StatusInfo = "Importing web-templates";
-                job.PercentComplete = 60;
                 _db.BackgroundTasks.Update(job);
                 await _db.SaveChangesAsync(cancellationToken);
 
-                var webTemplates = themePackage.WebTemplates.Select(webTemplateFromThemePackage => new WebTemplate
-                {
-                    Id = Guid.NewGuid(),
-                    ThemeId = themeId,
-                    Label = webTemplateFromThemePackage.Label,
-                    DeveloperName = webTemplateFromThemePackage.DeveloperName,
-                    Content = webTemplateFromThemePackage.Content,
-                    ParentTemplateId = webTemplateFromThemePackage.ParentTemplateId,
-                    IsBaseLayout = webTemplateFromThemePackage.IsBaseLayout,
-                    AllowAccessForNewContentTypes = webTemplateFromThemePackage.AllowAccessForNewContentTypes,
-                    IsBuiltInTemplate = webTemplateFromThemePackage.IsBuiltInTemplate,
-                }).ToList();
+                var contentTypeIds = await _db.ContentTypes
+                    .Select(ct => ct.Id)
+                    .ToArrayAsync(cancellationToken);
 
-                _db.WebTemplates.AddRange(webTemplates);
+                var webTemplateDeveloperNamesWebTemplates = new Dictionary<string, WebTemplate>();
+
+                foreach (var webTemplateFromJson in themePackage.WebTemplates)
+                {
+                    var webTemplateId = Guid.NewGuid();
+                    var webTemplate = new WebTemplate
+                    {
+                        Id = Guid.NewGuid(),
+                        ThemeId = themeId,
+                        DeveloperName = webTemplateFromJson.DeveloperName,
+                        Label = webTemplateFromJson.Label,
+                        Content = webTemplateFromJson.Content,
+                        IsBaseLayout = webTemplateFromJson.IsBaseLayout,
+                        IsBuiltInTemplate = webTemplateFromJson.IsBuiltInTemplate,
+                        AllowAccessForNewContentTypes = webTemplateFromJson.AllowAccessForNewContentTypes,
+                        TemplateAccessToModelDefinitions = webTemplateFromJson.AllowAccessForNewContentTypes
+                            ? contentTypeIds.Select(id => new WebTemplateAccessToModelDefinition { Id = Guid.NewGuid(), ContentTypeId = id, WebTemplateId = webTemplateId}).ToArray()
+                            : new List<WebTemplateAccessToModelDefinition>(),
+                    };
+
+                    webTemplateDeveloperNamesWebTemplates.Add(webTemplate.DeveloperName, webTemplate);
+                }
+
+                foreach (var themePackageWebTemplate in themePackage.WebTemplates)
+                {
+                    if (!string.IsNullOrEmpty(themePackageWebTemplate.ParentTemplateDeveloperName))
+                    {
+                        var webTemplate = webTemplateDeveloperNamesWebTemplates[themePackageWebTemplate.DeveloperName];
+                        var parentTemplateId = webTemplateDeveloperNamesWebTemplates[themePackageWebTemplate.ParentTemplateDeveloperName].Id;
+
+                        webTemplate.ParentTemplateId = parentTemplateId;
+                    }
+                }
 
                 // importing media items and download files
                 var mediaItems = new List<MediaItem>();
@@ -142,9 +161,11 @@ public class BeginImportThemeFromUrl
 
                 job.TaskStep = 4;
                 job.StatusInfo = "Importing media items and downloading files";
-                job.PercentComplete = 80;
                 _db.BackgroundTasks.Update(job);
                 await _db.SaveChangesAsync(cancellationToken);
+
+                var totalMediaItems = themePackage.MediaItems.Count();
+                var currentMediaItemIndex = 1;
 
                 foreach (var mediaItemInThemePackage in themePackage.MediaItems)
                 {
@@ -164,16 +185,26 @@ public class BeginImportThemeFromUrl
                         FileStorageProvider = _fileStorageProvider.GetName(),
                     };
 
-                    themeAccessToMediaItems.Add(new ThemeAccessToMediaItem
+                    var themeAccessToMediaItem = new ThemeAccessToMediaItem
                     {
                         Id = Guid.NewGuid(),
                         MediaItemId = mediaItem.Id,
                         ThemeId = theme.Id,
-                    });
+                    };
 
                     mediaItems.Add(mediaItem);
+                    themeAccessToMediaItems.Add(themeAccessToMediaItem);
+
+                    var percentDone = 100 * currentMediaItemIndex / totalMediaItems;
+                    job.PercentComplete = percentDone;
+                    _db.BackgroundTasks.Update(job);
+                    await _db.SaveChangesAsync(cancellationToken);
+
+                    currentMediaItemIndex++;
                 }
 
+                await _db.Themes.AddAsync(theme, cancellationToken);
+                await _db.WebTemplates.AddRangeAsync(webTemplateDeveloperNamesWebTemplates.Values, cancellationToken);
                 await _db.MediaItems.AddRangeAsync(mediaItems, cancellationToken);
                 await _db.ThemeAccessToMediaItems.AddRangeAsync(themeAccessToMediaItems, cancellationToken);
 
@@ -189,10 +220,7 @@ public class BeginImportThemeFromUrl
                 job.ErrorMessage = $"Failed to import. {e.Message}";
                 job.Status = BackgroundTaskStatus.Error;
                 _db.BackgroundTasks.Update(job);
-
                 await _db.SaveChangesAsync(cancellationToken);
-
-                Thread.Sleep(1500);
             }
         }
 
@@ -213,9 +241,6 @@ public class BeginImportThemeFromUrl
         private async Task<HttpContent> GetContentByUrl(string urlToDownload, CancellationToken cancellationToken)
         {
             var response = await _httpClient.GetAsync(urlToDownload, cancellationToken);
-
-            if (response == null)
-                throw new Exception($"Unable to retrieve file from {urlToDownload}. Reason unknown.");
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception($"Unable to retrieve file from {urlToDownload}: {response.StatusCode} - {response.ReasonPhrase}");

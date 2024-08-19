@@ -49,17 +49,23 @@ public class CreateContentItem
                 if (contentTypeDefinition == null)
                     throw new NotFoundException("Content Type", request.ContentTypeDeveloperName.ToDeveloperName());
 
+                var template = db.WebTemplates
+                    .Where(wt => wt.Id == request.TemplateId.Guid)
+                    .Select(wt => new { wt.ThemeId, wt.TemplateAccessToModelDefinitions })
+                    .FirstOrDefault();
+
+                if (template == null)
+                    throw new NotFoundException("WebTemplate", request.TemplateId);
+
                 var activeThemeId = db.OrganizationSettings
                     .Select(os => os.ActiveThemeId)
                     .First();
 
-                var template = db.WebTemplates
-                    .Where(wt => wt.ThemeId == activeThemeId)
-                    .Include(wt => wt.TemplateAccessToModelDefinitions)
-                    .FirstOrDefault(wt => wt.Id == request.TemplateId.Guid);
-
-                if (template == null)
-                    throw new NotFoundException("WebTemplate", request.TemplateId);
+                if (template.ThemeId != activeThemeId)
+                {
+                    context.AddFailure(Constants.VALIDATION_SUMMARY, "This template does not apply to the current active theme.");
+                    return;
+                }
 
                 if (!template.TemplateAccessToModelDefinitions.Any(p => p.ContentTypeId == contentTypeDefinition.Id))
                 {
@@ -126,19 +132,14 @@ public class CreateContentItem
 
             _db.ContentItems.Add(entity);
 
-            var activeThemeId = await _db.OrganizationSettings
-                .Select(os => os.ActiveThemeId)
-                .FirstAsync(cancellationToken);
-
-            var webTemplateContentItemMapping = new ThemeWebTemplateContentItemMapping
+            var webTemplateContentItemRelation = new WebTemplateContentItemRelation
             {
                 Id = Guid.NewGuid(),
-                ThemeId = activeThemeId,
                 WebTemplateId = request.TemplateId.Guid,
                 ContentItemId = entity.Id,
             };
 
-            await _db.ThemeWebTemplateContentItemMappings.AddAsync(webTemplateContentItemMapping, cancellationToken);
+            await _db.WebTemplateContentItemRelations.AddAsync(webTemplateContentItemRelation, cancellationToken);
 
             entity.AddDomainEvent(new ContentItemCreatedEvent(entity));
 

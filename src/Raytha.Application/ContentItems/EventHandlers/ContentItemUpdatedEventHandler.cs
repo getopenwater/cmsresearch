@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Shared;
+using Raytha.Application.Common.Utils;
 using Raytha.Domain.Events;
 using Raytha.Domain.ValueObjects;
 
@@ -29,17 +30,20 @@ public class ContentItemUpdatedEventHandler : INotificationHandler<ContentItemUp
                 .Select(os => os.ActiveThemeId)
                 .FirstAsync(cancellationToken);
 
-            var webTemplate = await _db.ThemeWebTemplateContentItemMappings
-                .Where(wtm => wtm.ThemeId == activeThemeId)
-                .Where(wtm => wtm.ContentItemId == notification.ContentItem.Id)
-                .Select(wtm => wtm.WebTemplate)
+            var webTemplate = await _db.WebTemplateContentItemRelations
+                .Where(wtr => wtr.ContentItemId == notification.ContentItem.Id && wtr.WebTemplate!.ThemeId == activeThemeId)
+                .Include(wtr => wtr.WebTemplate)
+                    .ThenInclude(wt => wt.TemplateAccessToModelDefinitions)
+                        .ThenInclude(md => md.ContentType)
+                .IncludeParentTemplates(wtr => wtr.WebTemplate!.ParentTemplate)
+                .Select(wtr => wtr.WebTemplate)
                 .FirstAsync(cancellationToken);
 
             foreach (var activeFunction in activeFunctions)
             {
                 await _taskQueue.EnqueueAsync<RaythaFunctionAsBackgroundTask>(new RaythaFunctionAsBackgroundTaskPayload 
                 {
-                    Target = ContentItemDto.GetProjection(notification.ContentItem, webTemplate!),
+                    Target = ContentItemRaythaFunctionTargetDto.GetProjection(notification.ContentItem, webTemplate),
                     RaythaFunction = activeFunction
                 }, cancellationToken);
             }

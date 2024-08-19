@@ -3,6 +3,7 @@ namespace Raytha.Domain.Entities;
 public class WebTemplate : BaseAuditableEntity
 {
     public required Guid ThemeId { get; set; }
+    public virtual Theme? Theme { get; set; }
     public bool IsBaseLayout { get; set; } = false;
     public string? Label { get; set; }
     public string? DeveloperName { get; set; }

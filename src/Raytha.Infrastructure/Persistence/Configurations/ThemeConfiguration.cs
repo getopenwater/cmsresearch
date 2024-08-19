@@ -21,5 +21,17 @@ public class ThemeConfiguration : IEntityTypeConfiguration<Theme>
             .HasOne(t => t.LastModifierUser)
             .WithMany()
             .HasForeignKey(t => t.LastModifierUserId);
+
+        builder
+            .HasMany(t => t.WebTemplates)
+            .WithOne(wt => wt.Theme)
+            .HasForeignKey(wt => wt.ThemeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasMany(t => t.ThemeAccessToMediaItems)
+            .WithOne(mi => mi.Theme)
+            .HasForeignKey(mi => mi.ThemeId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -1,4 +1,5 @@
-﻿using CSharpVitamins;
+﻿using System.Text.Json;
+using CSharpVitamins;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -77,23 +78,24 @@ public class DeleteContentItem
                 .Include(p => p.Route)
                 .First(p => p.Id == request.Id.Guid);
 
+            var webTemplateIds = await _entityFrameworkDb.WebTemplateContentItemRelations
+                .Where(wtr => wtr.ContentItemId == request.Id.Guid)
+                .Select(wtr => wtr.WebTemplateId)
+                .ToArrayAsync(cancellationToken);
+
             var trashEntity = new DeletedContentItem
             {
                 _PublishedContent = entityToDelete._PublishedContent,
                 ContentTypeId = entityToDelete.ContentTypeId,
                 OriginalContentItemId = request.Id.Guid,
                 PrimaryField = primaryFieldValue,
-                RoutePath = entityToDelete.Route.Path
+                RoutePath = entityToDelete.Route.Path,
+                WebTemplateIdsJson = JsonSerializer.Serialize(webTemplateIds),
             };
+
             _entityFrameworkDb.DeletedContentItems.Add(trashEntity);
             _entityFrameworkDb.ContentItems.Remove(entityToDelete);
             _entityFrameworkDb.Routes.Remove(entityToDelete.Route);
-
-            var webTemplateContentItemMappings = await _entityFrameworkDb.ThemeWebTemplateContentItemMappings
-                .Where(wtm => wtm.ContentItemId == entityToDelete.Id)
-                .ToListAsync(cancellationToken);
-
-            _entityFrameworkDb.ThemeWebTemplateContentItemMappings.RemoveRange(webTemplateContentItemMappings);
 
             entityToDelete.AddDomainEvent(new ContentItemDeletedEvent(entityToDelete));
 

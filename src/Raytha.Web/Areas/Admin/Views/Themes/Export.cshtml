@@ -1,5 +1,4 @@
-﻿@using Raytha.Web.Areas.Admin.Views.Themes
-@model ThemesBeginExportToUrl_ViewModel
+﻿@model ThemesExport_ViewModel
 @{
     ViewData["Title"] = "Themes > Export";
     ViewData["ActiveSubMenu"] = "Export";
@@ -14,7 +13,7 @@
     <div class="col-xxl-7 col-xl-8 col-lg-9 col-md-12">
         <div class="card border-0 shadow mb-4">
             <div class="card-body" data-controller="shared--copyclipboard">
-                <form asp-route="themesexporttourl" method="post" class="py-2">
+                <form asp-route="themesexport" method="post" class="py-2">
                     <input type="hidden" asp-for="Id">
                     <div class="mb-3 row">
                         <label class="col-auto col-form-label" asp-for="IsExportable"></label>

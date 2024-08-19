@@ -11,9 +11,6 @@ public class WebTemplateConfiguration : IEntityTypeConfiguration<WebTemplate>
         builder.HasIndex(b => new { b.DeveloperName, b.ThemeId })
             .IsUnique();
 
-        builder.HasIndex(b => b.DeveloperName)
-            .IsUnique(false);
-
         builder
             .HasOne(b => b.CreatorUser)
             .WithMany()

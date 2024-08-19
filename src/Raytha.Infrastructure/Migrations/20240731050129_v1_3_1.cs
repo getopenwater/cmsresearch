@@ -16,6 +16,22 @@ namespace Raytha.Infrastructure.Migrations
                 name: "IX_WebTemplates_DeveloperName",
                 table: "WebTemplates");
 
+            migrationBuilder.AddColumn<string>(
+                name: "WebTemplateIdsJson",
+                table: "DeletedContentItems",
+                type: "nvarchar(max)",
+                nullable: false,
+                defaultValue: "[]");
+
+            migrationBuilder.Sql(@"
+                UPDATE DeletedContentItems
+                SET WebTemplateIdsJson = '[""' + CAST(WebTemplateId AS NVARCHAR(36)) + '""]'
+            ");
+
+            migrationBuilder.DropColumn(
+                name: "WebTemplateId",
+                table: "DeletedContentItems");
+
             migrationBuilder.CreateTable(
                 name: "Themes",
                 columns: table => new
@@ -69,55 +85,91 @@ namespace Raytha.Infrastructure.Migrations
                 nullable: false,
                 defaultValue: defaultThemeId);
 
+            migrationBuilder.DropForeignKey(
+                name: "FK_ContentItems_WebTemplates_WebTemplateId",
+                table: "ContentItems");
+
+            migrationBuilder.DropIndex(
+                name: "IX_ContentItems_WebTemplateId",
+                table: "ContentItems");
+
             migrationBuilder.CreateTable(
-                name: "ThemeWebTemplateContentItemMappings",
+                name: "WebTemplateContentItemRelations",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     WebTemplateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ThemeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ContentItemId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    ContentItemId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ThemeWebTemplateContentItemMappings", x => x.Id);
+                    table.PrimaryKey("PK_WebTemplateContentItemRelations", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ThemeWebTemplateContentItemMappings_ContentItems_ContentItemId",
+                        name: "FK_WebTemplateContentItemRelations_ContentItems_ContentItemId",
                         column: x => x.ContentItemId,
                         principalTable: "ContentItems",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ThemeWebTemplateContentItemMappings_WebTemplates_WebTemplateId",
+                        name: "FK_WebTemplateContentItemRelations_WebTemplates_WebTemplateId",
                         column: x => x.WebTemplateId,
                         principalTable: "WebTemplates",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.Sql(@"
+                INSERT INTO WebTemplateContentItemRelations (Id, WebTemplateId, ContentItemId)
+                SELECT NEWID(), WebTemplateId, Id
+                FROM ContentItems
+            ");
+
+            migrationBuilder.DropColumn(
+                name: "WebTemplateId",
+                table: "ContentItems");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Views_WebTemplates_WebTemplateId",
+                table: "Views");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Views_WebTemplateId",
+                table: "Views");
+
             migrationBuilder.CreateTable(
-                name: "ThemeWebTemplateViewMappings",
+                name: "WebTemplateViewRelations",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     WebTemplateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ThemeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ViewId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ThemeWebTemplateViewMappings", x => x.Id);
+                    table.PrimaryKey("PK_WebTemplateViewRelations", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ThemeWebTemplateViewMappings_Views_ViewId",
+                        name: "FK_WebTemplateViewRelations_Views_ViewId",
                         column: x => x.ViewId,
                         principalTable: "Views",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ThemeWebTemplateViewMappings_WebTemplates_WebTemplateId",
+                        name: "FK_WebTemplateViewRelations_WebTemplates_WebTemplateId",
                         column: x => x.WebTemplateId,
                         principalTable: "WebTemplates",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.Sql(@"
+                INSERT INTO WebTemplateViewRelations (Id, WebTemplateId, ViewId)
+                SELECT NEWID(), WebTemplateId, Id
+                FROM Views
+            ");
+
+            migrationBuilder.DropColumn(
+                name: "WebTemplateId",
+                table: "Views");
 
             migrationBuilder.CreateTable(
                 name: "ThemeAccessToMediaItems",
@@ -145,17 +197,10 @@ namespace Raytha.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_WebTemplates_DeveloperName",
-                table: "WebTemplates",
-                column: "DeveloperName")
-                .Annotation("SqlServer:Include", new[] { "Id", "Label" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_WebTemplates_DeveloperName_ThemeId",
                 table: "WebTemplates",
                 columns: new[] { "DeveloperName", "ThemeId" },
-                unique: true,
-                filter: "[DeveloperName] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_WebTemplates_ThemeId",
@@ -189,36 +234,25 @@ namespace Raytha.Infrastructure.Migrations
                 column: "LastModifierUserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ThemeWebTemplateContentItemMappings_ContentItemId",
-                table: "ThemeWebTemplateContentItemMappings",
+                name: "IX_WebTemplateContentItemRelations_ContentItemId",
+                table: "WebTemplateContentItemRelations",
                 column: "ContentItemId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ThemeWebTemplateContentItemMappings_ThemeId_WebTemplateId_ContentItemId",
-                table: "ThemeWebTemplateContentItemMappings",
-                columns: new[] { "ThemeId", "WebTemplateId", "ContentItemId" },
-                unique: true,
-                filter: "[ContentItemId] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ThemeWebTemplateContentItemMappings_WebTemplateId",
-                table: "ThemeWebTemplateContentItemMappings",
-                column: "WebTemplateId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ThemeWebTemplateViewMappings_ThemeId_ViewId_WebTemplateId",
-                table: "ThemeWebTemplateViewMappings",
-                columns: new[] { "ThemeId", "ViewId", "WebTemplateId" },
+                name: "IX_WebTemplateContentItemRelations_WebTemplateId_ContentItemId",
+                table: "WebTemplateContentItemRelations",
+                columns: new[] { "WebTemplateId", "ContentItemId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ThemeWebTemplateViewMappings_ViewId",
-                table: "ThemeWebTemplateViewMappings",
-                column: "ViewId");
+                name: "IX_WebTemplateViewRelations_ViewId_WebTemplateId",
+                table: "WebTemplateViewRelations",
+                columns: new[] { "ViewId", "WebTemplateId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ThemeWebTemplateViewMappings_WebTemplateId",
-                table: "ThemeWebTemplateViewMappings",
+                name: "IX_WebTemplateViewRelations_WebTemplateId",
+                table: "WebTemplateViewRelations",
                 column: "WebTemplateId");
 
             migrationBuilder.AddForeignKey(
@@ -228,44 +262,6 @@ namespace Raytha.Infrastructure.Migrations
                 principalTable: "Themes",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.Sql(@"
-                INSERT INTO ThemeWebTemplateViewMappings (Id, WebTemplateId, ThemeId, ViewId)
-                SELECT NEWID(), WebTemplateId, (SELECT ActiveThemeId FROM OrganizationSettings), Id
-                FROM Views
-                WHERE WebTemplateId IS NOT NULL
-            ");
-
-            migrationBuilder.Sql(@"
-                INSERT INTO ThemeWebTemplateContentItemMappings (Id, WebTemplateId, ThemeId, ContentItemId)
-                SELECT NEWID(), WebTemplateId, (SELECT ActiveThemeId FROM OrganizationSettings), Id
-                FROM ContentItems
-                WHERE Id IS NOT NULL
-            ");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_ContentItems_WebTemplates_WebTemplateId",
-                table: "ContentItems");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Views_WebTemplates_WebTemplateId",
-                table: "Views");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Views_WebTemplateId",
-                table: "Views");
-
-            migrationBuilder.DropIndex(
-                name: "IX_ContentItems_WebTemplateId",
-                table: "ContentItems");
-
-            migrationBuilder.DropColumn(
-                name: "WebTemplateId",
-                table: "Views");
-
-            migrationBuilder.DropColumn(
-                name: "WebTemplateId",
-                table: "ContentItems");
         }
 
         /// <inheritdoc />
@@ -279,17 +275,13 @@ namespace Raytha.Infrastructure.Migrations
                 name: "ThemeAccessToMediaItems");
 
             migrationBuilder.DropTable(
-                name: "ThemeWebTemplateContentItemMappings");
+                name: "WebTemplateContentItemRelations");
 
             migrationBuilder.DropTable(
-                name: "ThemeWebTemplateViewMappings");
+                name: "WebTemplateViewRelations");
 
             migrationBuilder.DropTable(
                 name: "Themes");
-
-            migrationBuilder.DropIndex(
-                name: "IX_WebTemplates_DeveloperName",
-                table: "WebTemplates");
 
             migrationBuilder.DropIndex(
                 name: "IX_WebTemplates_DeveloperName_ThemeId",
@@ -307,9 +299,20 @@ namespace Raytha.Infrastructure.Migrations
                 name: "ActiveThemeId",
                 table: "OrganizationSettings");
 
+            migrationBuilder.DropColumn(
+                name: "WebTemplateIdsJson",
+                table: "DeletedContentItems");
+
             migrationBuilder.AddColumn<Guid>(
                 name: "WebTemplateId",
                 table: "Views",
+                type: "uniqueidentifier",
+                nullable: false,
+                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "WebTemplateId",
+                table: "DeletedContentItems",
                 type: "uniqueidentifier",
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
@@ -320,14 +323,6 @@ namespace Raytha.Infrastructure.Migrations
                 type: "uniqueidentifier",
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
-
-            migrationBuilder.CreateIndex(
-                name: "IX_WebTemplates_DeveloperName",
-                table: "WebTemplates",
-                column: "DeveloperName",
-                unique: true,
-                filter: "[DeveloperName] IS NOT NULL")
-                .Annotation("SqlServer:Include", new[] { "Id", "Label" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Views_WebTemplateId",

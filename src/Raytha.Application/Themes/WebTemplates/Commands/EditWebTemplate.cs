@@ -14,7 +14,6 @@ public class EditWebTemplate
 {
     public record Command : LoggableEntityRequest<CommandResponseDto<ShortGuid>>
     {
-        public required ShortGuid ThemeId { get; init; }
         public required string Label { get; init; }
         public required string Content { get; init; }
         public bool IsBaseLayout { get; init; }
@@ -24,7 +23,6 @@ public class EditWebTemplate
 
         public static Command Empty() => new()
         {
-            ThemeId = ShortGuid.Empty,
             Label = string.Empty,
             Content = string.Empty,
             TemplateAccessToModelDefinitions = new List<ShortGuid>(),
@@ -35,26 +33,21 @@ public class EditWebTemplate
     {
         public Validator(IRaythaDbContext db)
         {
-            RuleFor(x => x.ThemeId).NotEmpty();
             RuleFor(x => x.Label).NotEmpty();
             RuleFor(x => x.Content).NotEmpty();
             RuleFor(x => x.Content).NotEmpty().Must(WebTemplateExtensions.HasRenderBodyTag).When(p => p.IsBaseLayout)
                 .WithMessage("Content must have the {% renderbody %} tag if it is a base layout.");
             RuleFor(x => x).Custom((request, context) =>
             {
-                if (!db.Themes.Any(t => t.Id == request.ThemeId.Guid))
-                    throw new NotFoundException("Theme", request.ThemeId.Guid);
-
                 var entity = db.WebTemplates
-                    .Where(wt => wt.ThemeId == request.ThemeId.Guid)
+                    .Select(wt => new { wt.Id, wt.ThemeId })
                     .FirstOrDefault(p => p.Id == request.Id.Guid);
 
                 if (entity == null)
                     throw new NotFoundException("Template", request.Id);
 
                 var nonBaseLayoutsAllowedForNewTypesCount = db.WebTemplates
-                    .Where(wt => wt.ThemeId == request.ThemeId.Guid)
-                    .Count(wt => !wt.IsBaseLayout && wt.AllowAccessForNewContentTypes);
+                    .Count(wt => !wt.IsBaseLayout && wt.AllowAccessForNewContentTypes && wt.ThemeId == entity.ThemeId);
 
                 if (nonBaseLayoutsAllowedForNewTypesCount == 1)
                 {
@@ -83,18 +76,14 @@ public class EditWebTemplate
         public async Task<CommandResponseDto<ShortGuid>> Handle(Command request, CancellationToken cancellationToken)
         {
             var entity = await _db.WebTemplates
-                .Where(wt => wt.ThemeId == request.ThemeId.Guid)
                 .Include(wt => wt.TemplateAccessToModelDefinitions)
                 .FirstAsync(wt => wt.Id == request.Id.Guid, cancellationToken);
 
             if (request.ParentTemplateId.HasValue && request.ParentTemplateId != Guid.Empty)
             {
                 var parent = await _db.WebTemplates
-                    .Where(wt => wt.ThemeId == request.ThemeId.Guid)
-                    .FirstAsync(wt => wt.Id == request.ParentTemplateId.Value.Guid, cancellationToken);
-
-                if (parent.ParentTemplateId != null)
-                    await WebTemplateUtility.LoadParentWebTemplatesRecursiveAsync(parent, _db, cancellationToken);
+                    .IncludeParentTemplates(wt => wt.ParentTemplate)
+                    .FirstAsync(wt => wt.ThemeId == entity.ThemeId && wt.Id == request.ParentTemplateId.Value.Guid, cancellationToken);
 
                 var iterator = parent;
                 while (iterator != null)
@@ -109,7 +98,6 @@ public class EditWebTemplate
             if (!request.IsBaseLayout && entity.IsBaseLayout)
             {
                 var hasChildTemplates = _db.WebTemplates
-                    .Where(wt => wt.ThemeId == request.ThemeId.Guid)
                     .Any(wt => wt.ParentTemplateId == entity.Id);
 
                 if (hasChildTemplates)

@@ -4,7 +4,6 @@ using Raytha.Application.MediaItems;
 using Raytha.Application.Themes.WebTemplates;
 using Raytha.Web.Areas.Admin.Views.Shared;
 using Raytha.Web.Areas.Admin.Views.Shared.ViewModels;
-using Raytha.Web.Areas.Admin.Views.Themes.MediaItems;
 
 namespace Raytha.Web.Areas.Admin.Views.Themes.WebTemplates;
 

@@ -8,7 +8,7 @@ using Raytha.Application.Common.Models;
 
 namespace Raytha.Application.Themes.Commands;
 
-public class EditThemeForExport
+public class ToggleThemeExportability
 {
     public record Command : LoggableEntityRequest<CommandResponseDto<ShortGuid>>
     {
@@ -44,7 +44,7 @@ public class EditThemeForExport
         public async Task<CommandResponseDto<ShortGuid>> Handle(Command request, CancellationToken cancellationToken)
         {
             var entity = await _db.Themes
-                .FirstAsync(rt => rt.Id == request.Id.Guid, cancellationToken);
+                .FirstAsync(t => t.Id == request.Id.Guid, cancellationToken);
 
             entity.IsExportable = request.IsExportable;
 

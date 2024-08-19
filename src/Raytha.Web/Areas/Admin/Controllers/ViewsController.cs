@@ -18,7 +18,6 @@ using Raytha.Domain.ValueObjects.FieldTypes;
 using Microsoft.AspNetCore.Authorization;
 using Raytha.Application.Common.Utils;
 using Raytha.Web.Utils;
-using Raytha.Application.Themes.Queries;
 using Raytha.Application.Themes.WebTemplates.Queries;
 
 namespace Raytha.Web.Areas.Admin.Controllers;
@@ -175,12 +174,18 @@ public class ViewsController : BaseController
             PageSize = int.MaxValue,
         });
 
+        var webTemplateIdResponse = await Mediator.Send(new GetWebTemplateByViewId.Query
+        {
+            ViewId = CurrentView.Id,
+            ThemeId = CurrentOrganization.ActiveThemeId,
+        });
+
         var viewModel = new ViewsPublicSettings_ViewModel
         {
             Id = response.Result.Id,
             RoutePath = response.Result.RoutePath,
             IsPublished = response.Result.IsPublished,
-            TemplateId = response.Result.WebTemplateId,
+            TemplateId = webTemplateIdResponse.Result.Id,
             AvailableTemplates = webTemplates.Result?.Items.ToDictionary(p => p.Id.ToString(), p => p.Label),
             WebsiteUrl = CurrentOrganization.WebsiteUrl.TrimEnd('/') + CurrentOrganization.PathBase + "/",
             IgnoreClientFilterAndSortQueryParams = response.Result.IgnoreClientFilterAndSortQueryParams,
@@ -351,8 +356,8 @@ public class ViewsController : BaseController
         var selectedColumns = columnListItems.Where(p => p.Selected).OrderBy(c => c.FieldOrder);
         var notSelectedColumns = columnListItems.Where(p => !p.Selected).OrderBy(c => c.DeveloperName);
 
-        var model = new ViewsColumns_ViewModel 
-        { 
+        var model = new ViewsColumns_ViewModel
+        {
             SelectedColumns = selectedColumns.ToArray(),
             NotSelectedColumns = notSelectedColumns.ToArray()
         };

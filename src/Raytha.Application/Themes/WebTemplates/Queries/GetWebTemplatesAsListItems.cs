@@ -25,7 +25,12 @@ public class GetWebTemplatesAsListItems
 
         public async Task<IQueryResponseDto<ListResultDto<WebTemplateListItemDto>>> Handle(Query request, CancellationToken cancellationToken)
         {
-            var query = _db.WebTemplates.AsQueryable();
+            var activeThemeId = await _db.OrganizationSettings
+                .Select(os => os.ActiveThemeId)
+                .FirstAsync(cancellationToken);
+
+            var query = _db.WebTemplates
+                .Where(wt => wt.ThemeId == activeThemeId);
 
             if (!string.IsNullOrEmpty(request.Search))
             {

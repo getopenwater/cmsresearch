@@ -12,47 +12,28 @@ public class DeleteWebTemplate
 {
     public record Command : LoggableEntityRequest<CommandResponseDto<ShortGuid>>
     {
-        public required ShortGuid ThemeId { get; init; }
-
-        public static Command Empty() => new()
-        {
-            ThemeId = ShortGuid.Empty,
-        };
     }
 
     public class Validator : AbstractValidator<Command>
     {
         public Validator(IRaythaDbContext db)
         {
-            RuleFor(x => x.ThemeId).NotEmpty();
             RuleFor(x => x).Custom((request, context) =>
             {
-                if (!db.Themes.Any(t => t.Id == request.ThemeId.Guid))
-                    throw new NotFoundException("Theme", request.ThemeId.Guid);
-
                 var entity = db.WebTemplates
-                    .Where(wt => wt.ThemeId == request.ThemeId.Guid)
+                    .Select(wt => new { wt.Id, wt.IsBuiltInTemplate, wt.ThemeId })
                     .FirstOrDefault(p => p.Id == request.Id.Guid);
 
                 if (entity == null)
                     throw new NotFoundException("Template", request.Id);
 
-
-                var anyContentItemsUsingTemplate = db.ThemeWebTemplateContentItemMappings
-                    .Where(wtm => wtm.ThemeId == request.ThemeId.Guid)
-                    .Any(wtm => wtm.WebTemplateId == entity.Id);
-
-                if (anyContentItemsUsingTemplate)
+                if (db.WebTemplateContentItemRelations.Any(wtr => wtr.WebTemplateId == entity.Id))
                 {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "This template is currently being used by content items. You must change the template those content items are using before deleting this one.");
                     return;
                 }
 
-                var anyViewsUsingTemplate = db.ThemeWebTemplateViewMappings
-                    .Where(wtm => wtm.ThemeId == request.ThemeId.Guid)
-                    .Any(wtm => wtm.WebTemplateId == entity.Id);
-
-                if (anyViewsUsingTemplate)
+                if (db.WebTemplateViewRelations.Any(wtr => wtr.WebTemplateId == entity.Id))
                 {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "This template is currently being used by list views. You must change the template those list views are using before deleting this one.");
                     return;
@@ -64,21 +45,16 @@ public class DeleteWebTemplate
                     return;
                 }
 
-                var hasChildTemplates = db.WebTemplates
-                    .Where(wt => wt.ThemeId == request.ThemeId.Guid)
-                    .Any(p => p.ParentTemplateId == entity.Id);
-
-                if (hasChildTemplates)
+                if (db.WebTemplates.Any(p => p.ParentTemplateId == entity.Id))
                 {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "You must first remove or re-assign child templates.");
                     return;
                 }
 
-                var nonBaseLayoutsAllowedForNewTypes = db.WebTemplates
-                    .Where(wt => wt.ThemeId == request.ThemeId.Guid)
-                    .Count(wt => !wt.IsBaseLayout && wt.AllowAccessForNewContentTypes);
+                var nonBaseLayoutsAllowedForNewTypesCount = db.WebTemplates
+                    .Count(wt => !wt.IsBaseLayout && wt.AllowAccessForNewContentTypes && wt.ThemeId == entity.ThemeId);
 
-                if (nonBaseLayoutsAllowedForNewTypes == 1)
+                if (nonBaseLayoutsAllowedForNewTypesCount == 1)
                 {
                     if (entity.Id == request.Id.Guid)
                     {
@@ -102,8 +78,7 @@ public class DeleteWebTemplate
         public async Task<CommandResponseDto<ShortGuid>> Handle(Command request, CancellationToken cancellationToken)
         {
             var entity = _db.WebTemplates
-                .Where(wt => wt.ThemeId == request.ThemeId.Guid)
-                .First(p => p.Id == request.Id.Guid);
+                .First(wt => wt.Id == request.Id.Guid);
 
             _db.WebTemplates.Remove(entity);
             await _db.SaveChangesAsync(cancellationToken);

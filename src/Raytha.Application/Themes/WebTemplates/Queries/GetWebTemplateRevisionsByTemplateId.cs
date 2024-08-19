@@ -30,8 +30,7 @@ public class GetWebTemplateRevisionsByTemplateId
             var query = _db.WebTemplateRevisions
                 .Include(p => p.WebTemplate)
                 .Include(p => p.CreatorUser)
-                .Where(p => p.WebTemplateId == request.Id.Guid)
-                .AsQueryable();
+                .Where(p => p.WebTemplateId == request.Id.Guid);
 
             var total = await query.CountAsync(cancellationToken);
             var items = await query.ApplyPaginationInput(request).Select(WebTemplateRevisionDto.GetProjection()).ToArrayAsync(cancellationToken);

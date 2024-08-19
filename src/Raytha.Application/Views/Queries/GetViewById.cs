@@ -32,20 +32,7 @@ public class GetViewById
             if (entity == null)
                 throw new NotFoundException("View", request.Id);
 
-            var activeThemeId = await _db.OrganizationSettings
-                .Select(os => os.ActiveThemeId)
-                .FirstAsync(cancellationToken);
-
-            var webTemplate = await _db.ThemeWebTemplateViewMappings
-                .Where(wtm => wtm.ThemeId == activeThemeId)
-                .Where(wtm => wtm.ViewId == entity.Id)
-                .Select(wtm => wtm.WebTemplate)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (webTemplate == null)
-                throw new NotFoundException("webTemplate", request.Id);
-
-            return new QueryResponseDto<ViewDto>(ViewDto.GetProjection(entity, webTemplate));
+            return new QueryResponseDto<ViewDto>(ViewDto.GetProjection(entity));
         }
     }
 }

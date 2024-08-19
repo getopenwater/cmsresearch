@@ -29,12 +29,15 @@ public class ExportTheme
             RuleFor(x => x.DeveloperName).NotEmpty();
             RuleFor(x => x).Custom((request, context) =>
             {
-                var entity = db.Themes.FirstOrDefault(t => t.DeveloperName == request.DeveloperName.ToDeveloperName());
+                var theme = db.Themes
+                    .Where(t => t.DeveloperName == request.DeveloperName.ToDeveloperName())
+                    .Select(t => new { t.IsExportable })
+                    .FirstOrDefault();
 
-                if (entity == null)
-                    throw new NotFoundException("Theme", request.DeveloperName);
+                if (theme == null)
+                    throw new NotFoundException("Theme", request.DeveloperName.ToDeveloperName());
 
-                if (!entity.IsExportable)
+                if (!theme.IsExportable)
                     context.AddFailure("IsExportable", "The theme can not be exported");
             });
         }
@@ -54,28 +57,19 @@ public class ExportTheme
         public async Task<CommandResponseDto<ThemeJson>> Handle(Command request, CancellationToken cancellationToken)
         {
             var theme = await _db.Themes
-                .Where(t => t.DeveloperName == request.DeveloperName)
                 .Include(t => t.WebTemplates)
                 .Include(t => t.ThemeAccessToMediaItems)
                     .ThenInclude(tm => tm.MediaItem)
-                .FirstAsync(cancellationToken);
-
-            var mediaItemsJson = new List<MediaItemsJson>();
-
-            var themeMediaItems = theme.ThemeAccessToMediaItems.Select(tm => tm.MediaItem);
-            foreach (var themeMediaItem in themeMediaItems)
-            {
-                mediaItemsJson.Add(new MediaItemsJson
-                {
-                    FileName = themeMediaItem!.FileName,
-                    DownloadUrl = await _fileStorageProvider.GetDownloadUrlAsync(themeMediaItem.ObjectKey, FileStorageUtility.GetDefaultExpiry()),
-                });
-            }
+                .FirstAsync(t => t.DeveloperName == request.DeveloperName.ToDeveloperName(), cancellationToken);
 
             var themePackage = new ThemeJson
             {
                 WebTemplates = theme.WebTemplates.Select(WebTemplateJson.GetProjection),
-                MediaItems = mediaItemsJson,
+                MediaItems = await theme.ThemeAccessToMediaItems
+                    .Select(tm => tm.MediaItem!)
+                    .ToAsyncEnumerable()
+                    .SelectAwait(async mi => MediaItemJson.GetProjection(mi.FileName, await _fileStorageProvider.GetDownloadUrlAsync(mi.ObjectKey, FileStorageUtility.GetDefaultExpiry())))
+                    .ToArrayAsync(cancellationToken)
             };
 
             return new CommandResponseDto<ThemeJson>(themePackage);

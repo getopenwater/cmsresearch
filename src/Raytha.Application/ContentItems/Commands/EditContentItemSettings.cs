@@ -51,15 +51,18 @@ public class EditContentItemSettings
                     .Select(os => os.ActiveThemeId)
                     .First();
 
-                var template = db.WebTemplates
-                    .Where(wt => wt.ThemeId == activeThemeId)
+                var templateAccessToModelDefinitions = db.WebTemplates
                     .Include(wt => wt.TemplateAccessToModelDefinitions)
-                    .FirstOrDefault(wt => wt.Id == request.TemplateId.Guid);
+                    .Where(wt => wt.ThemeId == activeThemeId && wt.Id == request.TemplateId.Guid)
+                    .Select(wt => wt.TemplateAccessToModelDefinitions)
+                    .FirstOrDefault();
 
-                if (template == null)
+                if (templateAccessToModelDefinitions == null)
+                {
                     throw new NotFoundException("Template", request.TemplateId);
+                }
 
-                if (!template.TemplateAccessToModelDefinitions.Any(p => p.ContentTypeId == entity.ContentType.Id))
+                if (!templateAccessToModelDefinitions.Any(p => p.ContentTypeId == entity.ContentType.Id))
                 {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "This template does not have access to this model definition.");
                     return;
@@ -105,15 +108,13 @@ public class EditContentItemSettings
                 .Select(os => os.ActiveThemeId)
                 .FirstAsync(cancellationToken);
 
-            var webTemplateContentItemMapping = await _db.ThemeWebTemplateContentItemMappings
-                .Where(wtm => wtm.ThemeId == activeThemeId)
-                .FirstAsync(wtm => wtm.ContentItemId == entity.Id, cancellationToken);
+            var webTemplateContentRelation = await _db.WebTemplateContentItemRelations
+                .FirstAsync(wtr => wtr.ContentItemId == entity.Id && wtr.WebTemplate!.ThemeId == activeThemeId, cancellationToken);
 
-            webTemplateContentItemMapping.WebTemplateId = request.TemplateId;
-            _db.ThemeWebTemplateContentItemMappings.Update(webTemplateContentItemMapping);
+            webTemplateContentRelation.WebTemplateId = request.TemplateId.Guid;
+            _db.WebTemplateContentItemRelations.Update(webTemplateContentRelation);
 
             entity.AddDomainEvent(new ContentItemUpdatedEvent(entity));
-            
             await _db.SaveChangesAsync(cancellationToken);
 
             return new CommandResponseDto<ShortGuid>(entity.Id);

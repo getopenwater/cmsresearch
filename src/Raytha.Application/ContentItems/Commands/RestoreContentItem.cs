@@ -1,4 +1,5 @@
-﻿using CSharpVitamins;
+﻿using System.Text.Json;
+using CSharpVitamins;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Raytha.Application.Common.Exceptions;
@@ -34,28 +35,6 @@ public class RestoreContentItem
 
             _contentTypeInRoutePath.ValidateContentTypeInRoutePathMatchesValue(entity.ContentType.DeveloperName);
 
-            var templateId = Guid.Empty;
-            var activeThemeId = await _db.OrganizationSettings
-                .Select(os => os.ActiveThemeId)
-                .FirstAsync(cancellationToken);
-
-            var template = await _db.WebTemplates
-                .Where(wt => wt.ThemeId == activeThemeId)
-                .FirstOrDefaultAsync(wt => wt.Id == entity.WebTemplateId, cancellationToken);
-
-            if (template != null)
-            {
-                templateId = template.Id;
-            }
-            else
-            {
-                templateId = await _db.WebTemplates
-                    .Where(wt => wt.ThemeId == activeThemeId)
-                    .Where(wt => wt.DeveloperName == BuiltInWebTemplate.ContentItemDetailViewPage)
-                    .Select(wt => wt.Id)
-                    .FirstAsync(cancellationToken);
-            }
-
             string path = string.Empty;
             var routePathExists = _db.Routes.FirstOrDefault(p => p.Path.ToLower() == entity.RoutePath);
             if (routePathExists != null)
@@ -84,15 +63,39 @@ public class RestoreContentItem
             _db.ContentItems.Add(restoredEntity);
             _db.DeletedContentItems.Remove(entity);
 
-            var webTemplateContentItemMapping = new ThemeWebTemplateContentItemMapping
+            var webTemplateIdsFromJson = JsonSerializer.Deserialize<IEnumerable<Guid>>(entity.WebTemplateIdsJson)!;
+
+            var webTemplateInfos = await _db.WebTemplates
+                .Where(wt => webTemplateIdsFromJson.Contains(wt.Id))
+                .Select(wt => new
+                {
+                    wt.Id,
+                    wt.ThemeId,
+                }).ToListAsync(cancellationToken);
+
+            var activeThemeId = await _db.OrganizationSettings
+                .Select(os => os.ActiveThemeId)
+                .FirstAsync(cancellationToken);
+
+            if (!webTemplateInfos.Any(wt => wt.ThemeId == activeThemeId))
+            {
+                var defaultWebTemplate = await _db.WebTemplates
+                    .Where(wt => wt.ThemeId == activeThemeId && wt.DeveloperName == BuiltInWebTemplate.ContentItemDetailViewPage.DeveloperName)
+                    .Select(wt => new
+                    {
+                        wt.Id,
+                        wt.ThemeId,
+                    }).FirstAsync(cancellationToken);
+
+                webTemplateInfos.Add(defaultWebTemplate);
+            }
+
+            await _db.WebTemplateContentItemRelations.AddRangeAsync(webTemplateInfos.Select(wt => new WebTemplateContentItemRelation
             {
                 Id = Guid.NewGuid(),
-                ThemeId = activeThemeId,
-                WebTemplateId = templateId,
                 ContentItemId = restoredEntity.Id,
-            };
-
-            await _db.ThemeWebTemplateContentItemMappings.AddAsync(webTemplateContentItemMapping, cancellationToken);
+                WebTemplateId = wt.Id,
+            }), cancellationToken);
 
             await _db.SaveChangesAsync(cancellationToken);
             return new CommandResponseDto<ShortGuid>(entity.OriginalContentItemId);

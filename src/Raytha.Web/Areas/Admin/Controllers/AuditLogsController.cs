@@ -187,17 +187,19 @@ public class AuditLogsController : BaseController
             new RevertEmailTemplate.Command().GetLogName(),
 
             //Themes
-            ExportTheme.Command.Empty().GetLogName(),
+            BeginDuplicateTheme.Command.Empty().GetLogName(),
             BeginImportThemeFromUrl.Command.Empty().GetLogName(),
+            BeginMatchWebTemplates.Command.Empty().GetLogName(),
             CreateTheme.Command.Empty().GetLogName(),
             new DeleteTheme.Command().GetLogName(),
             EditTheme.Command.Empty().GetLogName(),
-            EditThemeForExport.Command.Empty().GetLogName(),
-            SetAsActiveTheme.Command.Empty().GetLogName(),
+            ExportTheme.Command.Empty().GetLogName(),
+            new SetAsActiveTheme.Command().GetLogName(),
+            ToggleThemeExportability.Command.Empty().GetLogName(),
 
             //Web-Templates
             CreateWebTemplate.Command.Empty().GetLogName(),
-            DeleteWebTemplate.Command.Empty().GetLogName(),
+            new DeleteWebTemplate.Command().GetLogName(),
             EditWebTemplate.Command.Empty().GetLogName(),
             new RevertWebTemplate.Command().GetLogName(),
 

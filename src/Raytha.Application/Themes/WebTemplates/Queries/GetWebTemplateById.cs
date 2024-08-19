@@ -27,13 +27,11 @@ public class GetWebTemplateById
             var entity = await _db.WebTemplates
                 .Include(p => p.TemplateAccessToModelDefinitions)
                     .ThenInclude(p => p.ContentType)
+                .IncludeParentTemplates(wt => wt.ParentTemplate)
                 .FirstOrDefaultAsync(p => p.Id == request.Id.Guid, cancellationToken);
 
             if (entity == null)
                 throw new NotFoundException("Template", request.Id);
-
-            if (entity.ParentTemplateId != null)
-                await WebTemplateUtility.LoadParentWebTemplatesRecursiveAsync(entity, _db, cancellationToken);
 
             return new QueryResponseDto<WebTemplateDto>(WebTemplateDto.GetProjection(entity)!);
         }

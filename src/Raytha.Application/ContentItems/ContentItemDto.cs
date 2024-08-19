@@ -4,7 +4,6 @@ using Raytha.Application.ContentTypes;
 using Raytha.Domain.Entities;
 using System.Linq.Expressions;
 using System.Text.Json.Serialization;
-using Raytha.Application.Themes.WebTemplates;
 
 namespace Raytha.Application.ContentItems;
 
@@ -16,13 +15,7 @@ public record ContentItemDto : BaseEntityDto
     public DateTime? LastModificationTime { get; init; }
     public bool IsPublished { get; init; }
     public bool IsDraft { get; init; }
-
-    [JsonIgnore]
-    public ShortGuid? WebTemplateId { get; init; }
     public ShortGuid ContentTypeId { get; init; }
-
-    [JsonIgnore]
-    public WebTemplateDto? WebTemplate { get; init; }
 
     [JsonIgnore]
     public ContentTypeDto? ContentType { get; init; }
@@ -34,11 +27,12 @@ public record ContentItemDto : BaseEntityDto
     public dynamic PublishedContent { get; init; }
     public dynamic DraftContent { get; init; }
 
-    public static Expression<Func<ContentItem, WebTemplate, ContentItemDto>> GetProjection()
+    public static Expression<Func<ContentItem, ContentItemDto>> GetProjection()
     {
-        return (entity, webTemplate) => GetProjection(entity, webTemplate);
+        return entity => GetProjection(entity);
     }
-    public static ContentItemDto GetProjection(ContentItem entity, WebTemplate? webTemplate)
+
+    public static ContentItemDto GetProjection(ContentItem entity)
     {
         return new ContentItemDto
         {
@@ -49,8 +43,6 @@ public record ContentItemDto : BaseEntityDto
             LastModificationTime = entity.LastModificationTime,
             IsDraft = entity.IsDraft,
             IsPublished = entity.IsPublished,
-            WebTemplateId = webTemplate?.Id,
-            WebTemplate = WebTemplateDto.GetProjection(webTemplate),
             ContentTypeId = entity.ContentTypeId,
             ContentType = ContentTypeDto.GetProjection(entity.ContentType),
             PrimaryField = entity.PrimaryField,

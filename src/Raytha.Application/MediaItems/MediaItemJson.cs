@@ -1,23 +1,23 @@
 ﻿using System.Linq.Expressions;
-using Raytha.Domain.Entities;
 
 namespace Raytha.Application.MediaItems;
 
-public class MediaItemsJson
+public class MediaItemJson
 {
     public required string FileName { get; init; }
-    public string DownloadUrl { get; set; }
+    public required string DownloadUrl { get; set; }
 
-    public static Expression<Func<MediaItem, MediaItemsJson>> GetProjection()
+    public static Expression<Func<string, string, MediaItemJson>> GetProjection()
     {
-        return entity => GetProjection(entity);
+        return (fileName, downloadUrl) => GetProjection(fileName, downloadUrl);
     }
 
-    public static MediaItemsJson GetProjection(MediaItem entity)
+    public static MediaItemJson GetProjection(string fileName, string downloadUrl)
     {
-        return new MediaItemsJson
+        return new MediaItemJson
         {
-            FileName = entity.FileName,
+            FileName = fileName,
+            DownloadUrl = downloadUrl,
         };
     }
 }

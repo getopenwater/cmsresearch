@@ -31,8 +31,7 @@ public class CreateContentType
             RuleFor(x => x.DefaultRouteTemplate).NotEmpty();
             RuleFor(x => x).Custom((request, context) =>
             {
-                var anyAlreadyExist = db.ContentTypes.Any(p => p.DeveloperName == request.DeveloperName.ToDeveloperName());
-                if (anyAlreadyExist)
+                if (db.ContentTypes.Any(p => p.DeveloperName == request.DeveloperName.ToDeveloperName()))
                 {
                     context.AddFailure("DeveloperName", $"A content type with the developer name {request.DeveloperName.ToDeveloperName()} already exists.");
                     return;
@@ -48,11 +47,11 @@ public class CreateContentType
                     .Select(os => os.ActiveThemeId)
                     .First();
 
-                var anyAvailableTemplates = db.WebTemplates
+                var areTemplatesAvailableForCurrentContentType = db.WebTemplates
                     .Where(wt => wt.ThemeId == activeThemeId)
                     .Any(wt => wt.AllowAccessForNewContentTypes && !wt.IsBaseLayout);
 
-                if (!anyAvailableTemplates)
+                if (!areTemplatesAvailableForCurrentContentType)
                 {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "There are no default web templates accessible for new content types. Set a template to allow access to new content types.");
                     return;
@@ -93,7 +92,7 @@ public class CreateContentType
                 FieldType = BaseFieldType.SingleLineText
             };
             _db.ContentTypeFields.Add(titlePageField);
-            
+
             entity.PrimaryFieldId = primaryFieldId;
 
             var contentPageField = new ContentTypeField
@@ -119,7 +118,7 @@ public class CreateContentType
                     ViewId = newViewId,
                     Path = $"{request.DeveloperName.ToDeveloperName()}"
                 },
-                Columns = new[] { BuiltInContentTypeField.PrimaryField.DeveloperName, BuiltInContentTypeField.CreationTime.DeveloperName, },
+                Columns = new[] { BuiltInContentTypeField.PrimaryField.DeveloperName, BuiltInContentTypeField.CreationTime.DeveloperName, BuiltInContentTypeField.Template.DeveloperName },
                 IsPublished = true
             };
 
@@ -130,9 +129,8 @@ public class CreateContentType
                 .FirstAsync(cancellationToken);
 
             var defaultWebTemplates = await _db.WebTemplates
-                .Where(wt => wt.ThemeId == activeThemeId)
-                .Where(wt => !wt.IsBaseLayout && wt.AllowAccessForNewContentTypes)
-                .ToListAsync(cancellationToken);
+                .Where(wt => wt.ThemeId == activeThemeId && !wt.IsBaseLayout && wt.AllowAccessForNewContentTypes)
+                .ToArrayAsync(cancellationToken);
 
             foreach (var webTemplate in defaultWebTemplates)
             {
@@ -141,20 +139,20 @@ public class CreateContentType
                     ContentTypeId = newContentTypeId,
                     WebTemplateId = webTemplate.Id
                 };
-                _db.WebTemplateAccessToModelDefinitions.Add(templateAccessModel);
+
+                await _db.WebTemplateAccessToModelDefinitions.AddAsync(templateAccessModel, cancellationToken);
             }
 
             var defaultContentListView = defaultWebTemplates.FirstOrDefault(p => p.DeveloperName == BuiltInWebTemplate.ContentItemListViewPage.DeveloperName) ?? defaultWebTemplates.First();
 
-            var webTemplateViewMapping = new ThemeWebTemplateViewMapping
+            var webTemplateViewRelation = new WebTemplateViewRelation
             {
                 Id = Guid.NewGuid(),
-                ThemeId = activeThemeId,
                 ViewId = newViewId,
                 WebTemplateId = defaultContentListView.Id,
             };
 
-            await _db.ThemeWebTemplateViewMappings.AddAsync(webTemplateViewMapping, cancellationToken);
+            await _db.WebTemplateViewRelations.AddAsync(webTemplateViewRelation, cancellationToken);
 
             var roles = _db.Roles
                 .Include(p => p.ContentTypeRolePermissions)
@@ -167,7 +165,7 @@ public class CreateContentType
                     ContentTypePermissions = BuiltInContentTypePermission.AllPermissionsAsEnum
                 });
             }
-            
+
             await _db.SaveChangesAsync(cancellationToken);
 
             return new CommandResponseDto<ShortGuid>(entity.Id);

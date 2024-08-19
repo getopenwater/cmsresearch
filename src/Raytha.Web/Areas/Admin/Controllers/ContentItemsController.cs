@@ -56,11 +56,21 @@ public class ContentItemsController : BaseController
         };
         var response = await Mediator.Send(input);
 
-        var items = response.Result.Items.Select(p => new ContentItemsListItem_ViewModel
+        var webTemplateContentItemRelationsResponse = await Mediator.Send(new GetWebTemplateContentItemRelationsByContentTypeId.Query
         {
-            Id = p.Id,
-            IsHomePage = CurrentOrganization.HomePageId == p.Id,
-            FieldValues = FieldValueConverter.MapToListItemValues(p)
+            ThemeId = CurrentOrganization.ActiveThemeId,
+            ContentTypeId = CurrentView.ContentTypeId,
+        });
+
+        var items = response.Result.Items.Select(p =>
+        {
+            var templateLabel = webTemplateContentItemRelationsResponse.Result.Where(wtr => wtr.ContentItemId == p.Id).Select(wtr => wtr.WebTemplate.Label).First();
+            return new ContentItemsListItem_ViewModel
+            {
+                Id = p.Id,
+                IsHomePage = CurrentOrganization.HomePageId == p.Id,
+                FieldValues = FieldValueConverter.MapToListItemValues(p, templateLabel)
+            };
         });
 
         var viewModel = new ContentItemsPagination_ViewModel(items, response.Result.TotalCount);
@@ -433,10 +443,16 @@ public class ContentItemsController : BaseController
             PageSize = int.MaxValue,
         });
 
+        var webTemplateResponse = await Mediator.Send(new GetWebTemplateByContentItemId.Query
+        {
+            ContentItemId = id,
+            ThemeId = CurrentOrganization.ActiveThemeId,
+        });
+
         var viewModel = new ContentItemsSettings_ViewModel
         {
             Id = response.Result.Id,
-            TemplateId = response.Result.WebTemplateId,
+            TemplateId = webTemplateResponse.Result.Id,
             IsHomePage = CurrentOrganization.HomePageId == response.Result.Id,
             RoutePath = response.Result.RoutePath,
             WebsiteUrl = CurrentOrganization.WebsiteUrl.TrimEnd('/') + CurrentOrganization.PathBase + "/",

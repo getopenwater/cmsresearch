@@ -56,7 +56,7 @@ public class GetFavoriteViewsForAdmin
             query = query.Where(p => p.UserFavorites.Any(p => p.Id == request.UserId.Guid));
 
             var total = await query.CountAsync(cancellationToken);
-            var items = query.ApplyPaginationInput(request).Select(v => ViewDto.GetProjection(v, null)).ToArray();
+            var items = query.ApplyPaginationInput(request).Select(v => ViewDto.GetProjection(v)).ToArray();
 
             return new QueryResponseDto<ListResultDto<ViewDto>>(new ListResultDto<ViewDto>(items, total));
         }

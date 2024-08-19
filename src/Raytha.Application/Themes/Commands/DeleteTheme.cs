@@ -7,7 +7,6 @@ using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Models;
 using Raytha.Application.Common.Utils;
 using Raytha.Domain.Entities;
-using Raytha.Domain.Events;
 
 namespace Raytha.Application.Themes.Commands;
 
@@ -23,22 +22,30 @@ public class DeleteTheme
         {
             RuleFor(x => x).Custom((request, context) =>
             {
-                var entity = db.Themes.FirstOrDefault(t => t.Id == request.Id.Guid);
-                var activeThemeId = db.OrganizationSettings.Select(os => os.ActiveThemeId).First();
+                var activeThemeId = db.OrganizationSettings
+                    .Select(os => os.ActiveThemeId)
+                    .First();
 
-                if (entity == null)
-                {
-                    throw new NotFoundException("Theme", request.Id);
-                }
-
-                if (entity.Id == activeThemeId)
+                if (request.Id.Guid == activeThemeId)
                 {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "You cannot delete an active theme. Set another theme as the active theme before deleting this one.");
 
                     return;
                 }
 
-                if (entity.DeveloperName == Theme.DEFAULT_THEME_DEVELOPER_NAME)
+                var theme = db.Themes
+                    .Where(t => t.Id == request.Id.Guid)
+                    .Select(t => new
+                    {
+                        t.DeveloperName,
+                    }).FirstOrDefault();
+
+                if (theme == null)
+                {
+                    throw new NotFoundException("Theme", request.Id);
+                }
+                
+                if (theme.DeveloperName == Theme.DEFAULT_THEME_DEVELOPER_NAME)
                 {
                     context.AddFailure(Constants.VALIDATION_SUMMARY, "You cannot delete the default theme.");
 
@@ -51,22 +58,27 @@ public class DeleteTheme
     public class Handler : IRequestHandler<Command, CommandResponseDto<ShortGuid>>
     {
         private readonly IRaythaDbContext _db;
+        private readonly IFileStorageProvider _fileStorageProvider;
 
-        public Handler(IRaythaDbContext db)
+        public Handler(IRaythaDbContext db, IFileStorageProvider fileStorageProvider)
         {
             _db = db;
+            _fileStorageProvider = fileStorageProvider;
         }
 
         public async Task<CommandResponseDto<ShortGuid>> Handle(Command request, CancellationToken cancellationToken)
         {
             var theme = await _db.Themes
-                .Include(t => t.WebTemplates)
+                .Include(t => t.ThemeAccessToMediaItems)
+                    .ThenInclude(mi => mi.MediaItem)
                 .FirstAsync(t => t.Id == request.Id.Guid, cancellationToken);
 
+            foreach (var themeAccessToMediaItem in theme.ThemeAccessToMediaItems)
+            {
+                await _fileStorageProvider.DeleteAsync(themeAccessToMediaItem.MediaItem!.ObjectKey);
+            }
+
             _db.Themes.Remove(theme);
-
-            theme.AddDomainEvent(new ThemeDeletedEvent(theme.Id));
-
             await _db.SaveChangesAsync(cancellationToken);
 
             return new CommandResponseDto<ShortGuid>(theme.Id);

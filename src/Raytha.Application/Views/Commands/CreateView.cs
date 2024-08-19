@@ -44,8 +44,7 @@ public class CreateView
                     }
                 }
 
-                var alreadyExists = db.Views.FirstOrDefault(p => p.ContentTypeId == request.ContentTypeId.Guid && p.DeveloperName == request.DeveloperName.ToDeveloperName());
-                if (alreadyExists != null)
+                if (db.Views.Any(p => p.ContentTypeId == request.ContentTypeId.Guid && p.DeveloperName == request.DeveloperName.ToDeveloperName()))
                 {
                     context.AddFailure("DeveloperName", $"A view with the developer name of {request.DeveloperName.ToDeveloperName()} already exists.");
                     return;
@@ -94,21 +93,19 @@ public class CreateView
                 entity.MaxNumberOfItemsPerPage = originalView.MaxNumberOfItemsPerPage;
                 entity.IgnoreClientFilterAndSortQueryParams = originalView.IgnoreClientFilterAndSortQueryParams;
 
-                var originalViewWebTemplateId = await _db.ThemeWebTemplateViewMappings
-                    .Where(wtv => wtv.ThemeId == activeThemeId)
-                    .Where(wtv => wtv.ViewId == originalView.Id)
+                var originalViewWebTemplateId = await _db.WebTemplateViewRelations
+                    .Where(wtr => wtr.ViewId == originalView.Id && wtr.WebTemplate!.ThemeId == activeThemeId)
                     .Select(wtv => wtv.WebTemplateId)
                     .FirstAsync(cancellationToken);
 
-                var webTemplateViewMapping = new ThemeWebTemplateViewMapping
+                var webTemplateViewRelation = new WebTemplateViewRelation
                 {
                     Id = Guid.NewGuid(),
-                    ThemeId = activeThemeId,
                     WebTemplateId = originalViewWebTemplateId,
                     ViewId = entity.Id,
                 };
 
-                await _db.ThemeWebTemplateViewMappings.AddAsync(webTemplateViewMapping, cancellationToken);
+                await _db.WebTemplateViewRelations.AddAsync(webTemplateViewRelation, cancellationToken);
             }
             else
             {
@@ -133,20 +130,18 @@ public class CreateView
                 entity.Columns = chosenColumns.Select(p => p.DeveloperName);
 
                 var defaultTemplateId = await _db.WebTemplates
-                    .Where(wt => wt.ThemeId == activeThemeId)
-                    .Where(wt => wt.DeveloperName == BuiltInWebTemplate.ContentItemListViewPage.DeveloperName)
+                    .Where(wt => wt.ThemeId == activeThemeId && wt.DeveloperName == BuiltInWebTemplate.ContentItemListViewPage.DeveloperName)
                     .Select(wt => wt.Id)
                     .FirstAsync(cancellationToken);
 
-                var webTemplateViewMapping = new ThemeWebTemplateViewMapping
+                var webTemplateViewRelation = new WebTemplateViewRelation
                 {
                     Id = Guid.NewGuid(),
-                    ThemeId = activeThemeId,
                     ViewId = entity.Id,
                     WebTemplateId = defaultTemplateId,
                 };
 
-                await _db.ThemeWebTemplateViewMappings.AddAsync(webTemplateViewMapping, cancellationToken);
+                await _db.WebTemplateViewRelations.AddAsync(webTemplateViewRelation, cancellationToken);
             }
 
             var path = GetRoutePath(request.DeveloperName, newEntityId, request.ContentTypeId.Guid);

@@ -1,5 +1,4 @@
-@using Raytha.Web.Areas.Admin.Views.Themes
-@model Raytha.Web.Areas.Admin.Views.Themes.MediaItems.MediaItemList_ViewModel
+@model MediaItemList_ViewModel
 @{
     ViewData["Title"] = "Themes > Media items";
     ViewData["ActiveSubMenu"] = "Media items";
@@ -51,7 +50,7 @@
         </div>
     </div>
     @(await Html.PartialAsync("~/Areas/Admin/Views/Themes/_ActionsMenu.cshtml", new ThemesActionsMenu_ViewModel
-{
-    ThemeId = Model.ThemeId,
-}))
+    {
+        ThemeId = Model.ThemeId,
+    }))
 </div>

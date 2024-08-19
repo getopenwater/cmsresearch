@@ -1,5 +1,4 @@
-﻿@using Raytha.Web.Areas.Admin.Views.Themes
-@model Raytha.Web.Areas.Admin.Views.Themes.ThemesMatchingWebTemplates_ViewModel
+﻿@model ThemesMatchingWebTemplates_ViewModel
 @{
     ViewData["Title"] = "Themes > Set as active theme > Template matching";
 }
@@ -16,7 +15,7 @@
             IsWebTemplates = false,
             IsMediaItems = false,
         }))
-        <form method="post" asp-route="themesmatchingwebtemplates" class="py-4">
+        <form method="post" asp-route="themesmatchingwebtemplates" asp-route-id="@Model.ThemeId" class="py-4" >
             <div class="table-responsive">
                 <table class="table mb-0 rounded">
                     <thead class="thead-light">
@@ -26,15 +25,15 @@
                     </tr>
                     </thead>
                     <tbody>
-                    @foreach (var activeTemplate in Model.ActiveThemeWebTemplates)
+                    @foreach (var activeThemeWebTemplateDeveloperName in Model.ActiveThemeWebTemplateDeveloperNames)
                     {
                         <tr>
                             <td>
-                                <small>@activeTemplate.DeveloperName</small>
+                                <small>@activeThemeWebTemplateDeveloperName</small>
                             </td>
                             <td>
                                 @{
-                                    <select class="form-select" required asp-for="@Model.WebTemplateMappings[activeTemplate.DeveloperName]" asp-items="@(new SelectList(Model.NewActiveThemeWebTemplates, "DeveloperName", "DeveloperName"))">
+                                    <select class="form-select" required asp-for="@Model.WebTemplateMappings[activeThemeWebTemplateDeveloperName]" asp-items="@(new SelectList(Model.NewActiveThemeWebTemplateDeveloperNames))">
                                         <option value="">--SELECT--</option>
                                     </select>
                                 }

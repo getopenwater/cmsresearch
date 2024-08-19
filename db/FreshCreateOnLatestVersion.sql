@@ -916,6 +916,24 @@ GO
 DROP INDEX [IX_WebTemplates_DeveloperName] ON [WebTemplates];
 GO
 
+ALTER TABLE [DeletedContentItems] ADD [WebTemplateIdsJson] nvarchar(max) NOT NULL DEFAULT N'[]';
+GO
+
+
+                UPDATE DeletedContentItems
+                SET WebTemplateIdsJson = '["' + CAST(WebTemplateId AS NVARCHAR(36)) + '"]'
+            
+GO
+
+DECLARE @var0 sysname;
+SELECT @var0 = [d].[name]
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[DeletedContentItems]') AND [c].[name] = N'WebTemplateId');
+IF @var0 IS NOT NULL EXEC(N'ALTER TABLE [DeletedContentItems] DROP CONSTRAINT [' + @var0 + '];');
+ALTER TABLE [DeletedContentItems] DROP COLUMN [WebTemplateId];
+GO
+
 CREATE TABLE [Themes] (
     [Id] uniqueidentifier NOT NULL,
     [Title] nvarchar(max) NOT NULL,
@@ -935,37 +953,79 @@ GO
 IF EXISTS (SELECT * FROM [sys].[identity_columns] WHERE [name] IN (N'Id', N'Title', N'DeveloperName', N'IsExportable', N'Description', N'CreationTime') AND [object_id] = OBJECT_ID(N'[Themes]'))
     SET IDENTITY_INSERT [Themes] ON;
 INSERT INTO [Themes] ([Id], [Title], [DeveloperName], [IsExportable], [Description], [CreationTime])
-VALUES ('154d3ad5-7949-4b2c-8446-5f1d7333a9ee', N'Raytha default theme', N'raytha_default_theme', CAST(0 AS bit), N'Raytha default theme', '2024-07-31T05:47:22.9976135Z');
+VALUES ('4cad264c-0f9e-450c-8b3a-048c14387e07', N'Raytha default theme', N'raytha_default_theme', CAST(0 AS bit), N'Raytha default theme', '2024-08-16T13:29:13.5678160Z');
 IF EXISTS (SELECT * FROM [sys].[identity_columns] WHERE [name] IN (N'Id', N'Title', N'DeveloperName', N'IsExportable', N'Description', N'CreationTime') AND [object_id] = OBJECT_ID(N'[Themes]'))
     SET IDENTITY_INSERT [Themes] OFF;
 GO
 
-ALTER TABLE [WebTemplates] ADD [ThemeId] uniqueidentifier NOT NULL DEFAULT '154d3ad5-7949-4b2c-8446-5f1d7333a9ee';
+ALTER TABLE [WebTemplates] ADD [ThemeId] uniqueidentifier NOT NULL DEFAULT '4cad264c-0f9e-450c-8b3a-048c14387e07';
 GO
 
-ALTER TABLE [OrganizationSettings] ADD [ActiveThemeId] uniqueidentifier NOT NULL DEFAULT '154d3ad5-7949-4b2c-8446-5f1d7333a9ee';
+ALTER TABLE [OrganizationSettings] ADD [ActiveThemeId] uniqueidentifier NOT NULL DEFAULT '4cad264c-0f9e-450c-8b3a-048c14387e07';
 GO
 
-CREATE TABLE [ThemeWebTemplateContentItemMappings] (
+ALTER TABLE [ContentItems] DROP CONSTRAINT [FK_ContentItems_WebTemplates_WebTemplateId];
+GO
+
+DROP INDEX [IX_ContentItems_WebTemplateId] ON [ContentItems];
+GO
+
+CREATE TABLE [WebTemplateContentItemRelations] (
     [Id] uniqueidentifier NOT NULL,
     [WebTemplateId] uniqueidentifier NOT NULL,
-    [ThemeId] uniqueidentifier NOT NULL,
-    [ContentItemId] uniqueidentifier NULL,
-    CONSTRAINT [PK_ThemeWebTemplateContentItemMappings] PRIMARY KEY ([Id]),
-    CONSTRAINT [FK_ThemeWebTemplateContentItemMappings_ContentItems_ContentItemId] FOREIGN KEY ([ContentItemId]) REFERENCES [ContentItems] ([Id]),
-    CONSTRAINT [FK_ThemeWebTemplateContentItemMappings_WebTemplates_WebTemplateId] FOREIGN KEY ([WebTemplateId]) REFERENCES [WebTemplates] ([Id]) ON DELETE CASCADE
+    [ContentItemId] uniqueidentifier NOT NULL,
+    CONSTRAINT [PK_WebTemplateContentItemRelations] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_WebTemplateContentItemRelations_ContentItems_ContentItemId] FOREIGN KEY ([ContentItemId]) REFERENCES [ContentItems] ([Id]) ON DELETE CASCADE,
+    CONSTRAINT [FK_WebTemplateContentItemRelations_WebTemplates_WebTemplateId] FOREIGN KEY ([WebTemplateId]) REFERENCES [WebTemplates] ([Id]) ON DELETE CASCADE
 );
 GO
 
-CREATE TABLE [ThemeWebTemplateViewMappings] (
+
+                INSERT INTO WebTemplateContentItemRelations (Id, WebTemplateId, ContentItemId)
+                SELECT NEWID(), WebTemplateId, Id
+                FROM ContentItems
+            
+GO
+
+DECLARE @var1 sysname;
+SELECT @var1 = [d].[name]
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[ContentItems]') AND [c].[name] = N'WebTemplateId');
+IF @var1 IS NOT NULL EXEC(N'ALTER TABLE [ContentItems] DROP CONSTRAINT [' + @var1 + '];');
+ALTER TABLE [ContentItems] DROP COLUMN [WebTemplateId];
+GO
+
+ALTER TABLE [Views] DROP CONSTRAINT [FK_Views_WebTemplates_WebTemplateId];
+GO
+
+DROP INDEX [IX_Views_WebTemplateId] ON [Views];
+GO
+
+CREATE TABLE [WebTemplateViewRelations] (
     [Id] uniqueidentifier NOT NULL,
     [WebTemplateId] uniqueidentifier NOT NULL,
-    [ThemeId] uniqueidentifier NOT NULL,
     [ViewId] uniqueidentifier NOT NULL,
-    CONSTRAINT [PK_ThemeWebTemplateViewMappings] PRIMARY KEY ([Id]),
-    CONSTRAINT [FK_ThemeWebTemplateViewMappings_Views_ViewId] FOREIGN KEY ([ViewId]) REFERENCES [Views] ([Id]),
-    CONSTRAINT [FK_ThemeWebTemplateViewMappings_WebTemplates_WebTemplateId] FOREIGN KEY ([WebTemplateId]) REFERENCES [WebTemplates] ([Id]) ON DELETE CASCADE
+    CONSTRAINT [PK_WebTemplateViewRelations] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_WebTemplateViewRelations_Views_ViewId] FOREIGN KEY ([ViewId]) REFERENCES [Views] ([Id]) ON DELETE CASCADE,
+    CONSTRAINT [FK_WebTemplateViewRelations_WebTemplates_WebTemplateId] FOREIGN KEY ([WebTemplateId]) REFERENCES [WebTemplates] ([Id]) ON DELETE CASCADE
 );
+GO
+
+
+                INSERT INTO WebTemplateViewRelations (Id, WebTemplateId, ViewId)
+                SELECT NEWID(), WebTemplateId, Id
+                FROM Views
+            
+GO
+
+DECLARE @var2 sysname;
+SELECT @var2 = [d].[name]
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[Views]') AND [c].[name] = N'WebTemplateId');
+IF @var2 IS NOT NULL EXEC(N'ALTER TABLE [Views] DROP CONSTRAINT [' + @var2 + '];');
+ALTER TABLE [Views] DROP COLUMN [WebTemplateId];
 GO
 
 CREATE TABLE [ThemeAccessToMediaItems] (
@@ -978,10 +1038,7 @@ CREATE TABLE [ThemeAccessToMediaItems] (
 );
 GO
 
-CREATE INDEX [IX_WebTemplates_DeveloperName] ON [WebTemplates] ([DeveloperName]) INCLUDE ([Id], [Label]);
-GO
-
-CREATE UNIQUE INDEX [IX_WebTemplates_DeveloperName_ThemeId] ON [WebTemplates] ([DeveloperName], [ThemeId]) WHERE [DeveloperName] IS NOT NULL;
+CREATE UNIQUE INDEX [IX_WebTemplates_DeveloperName_ThemeId] ON [WebTemplates] ([DeveloperName], [ThemeId]);
 GO
 
 CREATE INDEX [IX_WebTemplates_ThemeId] ON [WebTemplates] ([ThemeId]);
@@ -1002,71 +1059,19 @@ GO
 CREATE INDEX [IX_Themes_LastModifierUserId] ON [Themes] ([LastModifierUserId]);
 GO
 
-CREATE INDEX [IX_ThemeWebTemplateContentItemMappings_ContentItemId] ON [ThemeWebTemplateContentItemMappings] ([ContentItemId]);
+CREATE INDEX [IX_WebTemplateContentItemRelations_ContentItemId] ON [WebTemplateContentItemRelations] ([ContentItemId]);
 GO
 
-CREATE UNIQUE INDEX [IX_ThemeWebTemplateContentItemMappings_ThemeId_WebTemplateId_ContentItemId] ON [ThemeWebTemplateContentItemMappings] ([ThemeId], [WebTemplateId], [ContentItemId]) WHERE [ContentItemId] IS NOT NULL;
+CREATE UNIQUE INDEX [IX_WebTemplateContentItemRelations_WebTemplateId_ContentItemId] ON [WebTemplateContentItemRelations] ([WebTemplateId], [ContentItemId]);
 GO
 
-CREATE INDEX [IX_ThemeWebTemplateContentItemMappings_WebTemplateId] ON [ThemeWebTemplateContentItemMappings] ([WebTemplateId]);
+CREATE UNIQUE INDEX [IX_WebTemplateViewRelations_ViewId_WebTemplateId] ON [WebTemplateViewRelations] ([ViewId], [WebTemplateId]);
 GO
 
-CREATE UNIQUE INDEX [IX_ThemeWebTemplateViewMappings_ThemeId_ViewId_WebTemplateId] ON [ThemeWebTemplateViewMappings] ([ThemeId], [ViewId], [WebTemplateId]);
-GO
-
-CREATE INDEX [IX_ThemeWebTemplateViewMappings_ViewId] ON [ThemeWebTemplateViewMappings] ([ViewId]);
-GO
-
-CREATE INDEX [IX_ThemeWebTemplateViewMappings_WebTemplateId] ON [ThemeWebTemplateViewMappings] ([WebTemplateId]);
+CREATE INDEX [IX_WebTemplateViewRelations_WebTemplateId] ON [WebTemplateViewRelations] ([WebTemplateId]);
 GO
 
 ALTER TABLE [WebTemplates] ADD CONSTRAINT [FK_WebTemplates_Themes_ThemeId] FOREIGN KEY ([ThemeId]) REFERENCES [Themes] ([Id]) ON DELETE CASCADE;
-GO
-
-
-                INSERT INTO ThemeWebTemplateViewMappings (Id, WebTemplateId, ThemeId, ViewId)
-                SELECT NEWID(), WebTemplateId, (SELECT ActiveThemeId FROM OrganizationSettings), Id
-                FROM Views
-                WHERE WebTemplateId IS NOT NULL
-            
-GO
-
-
-                INSERT INTO ThemeWebTemplateContentItemMappings (Id, WebTemplateId, ThemeId, ContentItemId)
-                SELECT NEWID(), WebTemplateId, (SELECT ActiveThemeId FROM OrganizationSettings), Id
-                FROM ContentItems
-                WHERE Id IS NOT NULL
-            
-GO
-
-ALTER TABLE [ContentItems] DROP CONSTRAINT [FK_ContentItems_WebTemplates_WebTemplateId];
-GO
-
-ALTER TABLE [Views] DROP CONSTRAINT [FK_Views_WebTemplates_WebTemplateId];
-GO
-
-DROP INDEX [IX_Views_WebTemplateId] ON [Views];
-GO
-
-DROP INDEX [IX_ContentItems_WebTemplateId] ON [ContentItems];
-GO
-
-DECLARE @var0 sysname;
-SELECT @var0 = [d].[name]
-FROM [sys].[default_constraints] [d]
-INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
-WHERE ([d].[parent_object_id] = OBJECT_ID(N'[Views]') AND [c].[name] = N'WebTemplateId');
-IF @var0 IS NOT NULL EXEC(N'ALTER TABLE [Views] DROP CONSTRAINT [' + @var0 + '];');
-ALTER TABLE [Views] DROP COLUMN [WebTemplateId];
-GO
-
-DECLARE @var1 sysname;
-SELECT @var1 = [d].[name]
-FROM [sys].[default_constraints] [d]
-INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
-WHERE ([d].[parent_object_id] = OBJECT_ID(N'[ContentItems]') AND [c].[name] = N'WebTemplateId');
-IF @var1 IS NOT NULL EXEC(N'ALTER TABLE [ContentItems] DROP CONSTRAINT [' + @var1 + '];');
-ALTER TABLE [ContentItems] DROP COLUMN [WebTemplateId];
 GO
 
 INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
@@ -1075,3 +1080,4 @@ GO
 
 COMMIT;
 GO
+

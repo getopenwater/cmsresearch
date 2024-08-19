@@ -40,7 +40,11 @@ public class AccountActionViewResult : IActionResult
         httpContext.Response.StatusCode = 200;
         httpContext.Response.ContentType = ContentType;
 
-        var template = await mediator.Send(new GetActiveThemeWebTemplateByDeveloperName.Query { DeveloperName = _view, });
+        var template = await mediator.Send(new GetWebTemplateByDeveloperName.Query { 
+            DeveloperName = _view,
+            ThemeId = currentOrg.ActiveThemeId
+        });
+
         var source = template.Result.Content;
         var sourceWithParents = WebTemplateExtensions.ContentAssembledFromParents(source, template.Result.ParentTemplate);
 

@@ -49,11 +49,7 @@ public class CreateWebTemplate
                 .WithMessage("Content must have the {% renderbody %} tag if it is a base layout.");
             RuleFor(x => x).Custom((request, context) =>
             {
-                var anyAlreadyExistWithDeveloperName = db.WebTemplates
-                    .Where(wt => wt.ThemeId == request.ThemeId.Guid)
-                    .Any(wt => wt.DeveloperName == request.DeveloperName.ToDeveloperName());
-
-                if (anyAlreadyExistWithDeveloperName)
+                if (db.WebTemplates.Any(wt => wt.ThemeId == request.ThemeId.Guid && wt.DeveloperName == request.DeveloperName.ToDeveloperName()))
                     context.AddFailure("A template with that developer name already exists.");
             });
         }
@@ -70,7 +66,7 @@ public class CreateWebTemplate
 
         public async Task<CommandResponseDto<ShortGuid>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var entity = new WebTemplate
+            var webTemplate = new WebTemplate
             {
                 Id = Guid.NewGuid(),
                 ThemeId = request.ThemeId.Guid,
@@ -87,11 +83,11 @@ public class CreateWebTemplate
                 }).ToList(),
             };
 
-            await _db.WebTemplates.AddAsync(entity, cancellationToken);
+            await _db.WebTemplates.AddAsync(webTemplate, cancellationToken);
 
             await _db.SaveChangesAsync(cancellationToken);
 
-            return new CommandResponseDto<ShortGuid>(entity.Id);
+            return new CommandResponseDto<ShortGuid>(webTemplate.Id);
         }
     }
 }

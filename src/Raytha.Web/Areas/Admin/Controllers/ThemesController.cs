@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -8,7 +7,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
 using Raytha.Application.BackgroundTasks.Queries;
+using Raytha.Application.Common.Interfaces;
 using Raytha.Application.Common.Utils;
 using Raytha.Application.ContentTypes;
 using Raytha.Application.ContentTypes.Queries;
@@ -32,9 +33,12 @@ using Raytha.Web.Utils;
 namespace Raytha.Web.Areas.Admin.Controllers;
 
 [Area("Admin")]
-[Authorize(Policy = BuiltInSystemPermission.MANAGE_SYSTEM_SETTINGS_PERMISSION)]
+[Authorize(Policy = BuiltInSystemPermission.MANAGE_TEMPLATES_PERMISSION)]
 public class ThemesController : BaseController
 {
+    private IRelativeUrlBuilder _relativeUrlBuilder;
+    protected IRelativeUrlBuilder RelativeUrlBuilder => _relativeUrlBuilder ??= HttpContext.RequestServices.GetRequiredService<IRelativeUrlBuilder>();
+
     [ServiceFilter(typeof(SetPaginationInformationFilterAttribute))]
     [Route($"{RAYTHA_ROUTE_PREFIX}/themes", Name = "themesindex")]
     public async Task<IActionResult> Index(string search = "",
@@ -51,24 +55,15 @@ public class ThemesController : BaseController
         };
 
         var themesResponse = await Mediator.Send(input);
-        var latestWebTemplatesResponse = await Mediator.Send(new GetLatestWebTemplate.Query());
 
-        var items = themesResponse.Result.Items.Select(t =>
+        var items = themesResponse.Result.Items.Select(t => new ThemesListItem_ViewModel
         {
-            var latestWebTemplate = latestWebTemplatesResponse.Result.FirstOrDefault(nmr => nmr.ThemeId == t.Id);
-            var (lastModificationTime, lastModificationUser) = Nullable.Compare(t.LastModificationTime, latestWebTemplate?.CreationTime) > 0
-                ? (t.LastModificationTime, t.LastModifierUser)
-                : (latestWebTemplate?.CreationTime, latestWebTemplate?.CreatorUser);
-
-            return new ThemesListItem_ViewModel
-            {
-                Id = t.Id,
-                Title = t.Title,
-                DeveloperName = t.DeveloperName,
-                Description = t.Description,
-                LastModificationTime = CurrentOrganization.TimeZoneConverter.UtcToTimeZoneAsDateTimeFormat(lastModificationTime),
-                LastModifierUser = lastModificationUser?.FullName ?? "N/A",
-            };
+            Id = t.Id,
+            Title = t.Title,
+            DeveloperName = t.DeveloperName,
+            Description = t.Description,
+            LastModificationTime = CurrentOrganization.TimeZoneConverter.UtcToTimeZoneAsDateTimeFormat(t.LastModificationTime),
+            LastModifierUser = t.LastModifierUser?.FullName ?? "N/A",
         });
 
         var viewModel = new List_ViewModel<ThemesListItem_ViewModel>(items, themesResponse.Result.TotalCount);
@@ -106,6 +101,57 @@ public class ThemesController : BaseController
         else
         {
             SetErrorMessage("There was an error attempting to create this theme. See the error below.", response.GetErrors());
+
+            return View(model);
+        }
+    }
+
+    [Route($"{RAYTHA_ROUTE_PREFIX}/themes/duplicate", Name = "themesduplicate")]
+    public async Task<IActionResult> BeginDuplicate()
+    {
+        var themesResponse = await Mediator.Send(new GetThemes.Query
+        {
+            OrderBy = $"CreationTime {SortOrder.ASCENDING}",
+        });
+
+        return View(new ThemesDuplicate_ViewModel
+        {
+            Themes = themesResponse.Result.Items,
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Route($"{RAYTHA_ROUTE_PREFIX}/themes/duplicate", Name = "themesduplicate")]
+    public async Task<IActionResult> BeginDuplicate(ThemesDuplicate_ViewModel model)
+    {
+        var input = new BeginDuplicateTheme.Command
+        {
+            Title = model.Title,
+            DeveloperName = model.DeveloperName,
+            Description = model.Description,
+            ThemeId = model.ThemeId,
+            PathBase = RelativeUrlBuilder.GetBaseUrl(),
+        };
+
+        var response = await Mediator.Send(input);
+
+        if (response.Success)
+        {
+            SetSuccessMessage("Creating a duplicate theme in progress.");
+
+            return RedirectToAction(nameof(BackgroundTaskStatus), new { id = response.Result });
+        }
+        else
+        {
+            SetErrorMessage("There was an error attempting to duplicate this theme. See the error below.", response.GetErrors());
+
+            var themesResponse = await Mediator.Send(new GetThemes.Query
+            {
+                OrderBy = $"CreationTime {SortOrder.ASCENDING}",
+            });
+
+            model.Themes = themesResponse.Result.Items;
 
             return View(model);
         }
@@ -190,46 +236,54 @@ public class ThemesController : BaseController
     [Route($"{RAYTHA_ROUTE_PREFIX}/themes/set-as-active-theme/{{id}}", Name = "themessetasactivetheme")]
     public async Task<IActionResult> SetAsActiveTheme(string id)
     {
-        var newThemeContainsMappingsResponse = await Mediator.Send(new GetAnyWebTemplateMappings.Query
+        var webTemplateDeveloperNamesWithoutRelationResponse = await Mediator.Send(new GetWebTemplateDeveloperNamesWithoutRelation.Query
         {
             ThemeId = id,
         });
 
-        if (newThemeContainsMappingsResponse.Result.IsWebTemplateMatchingRequired)
+        if (webTemplateDeveloperNamesWithoutRelationResponse.Result.Any())
         {
-            return RedirectToAction(nameof(MatchingWebTemplates), new { id });
+            var newActiveThemeWebTemplateDeveloperNamesResponse = await Mediator.Send(new GetWebTemplateDeveloperNamesByThemeId.Query
+            {
+                ThemeId = id,
+            });
+
+            var model = new ThemesMatchingWebTemplates_ViewModel
+            {
+                ThemeId = id,
+                ActiveThemeWebTemplateDeveloperNames = webTemplateDeveloperNamesWithoutRelationResponse.Result,
+                NewActiveThemeWebTemplateDeveloperNames = newActiveThemeWebTemplateDeveloperNamesResponse.Result,
+                WebTemplateMappings = webTemplateDeveloperNamesWithoutRelationResponse.Result.ToDictionary(dn => dn, developerName => newActiveThemeWebTemplateDeveloperNamesResponse.Result.Any(dn => dn == developerName) ? developerName :string.Empty)
+            };
+
+            return View("~/Areas/Admin/Views/Themes/MatchingWebTemplates.cshtml", model);
+        }
+
+        var input = new SetAsActiveTheme.Command
+        {
+            Id = id,
+        };
+
+        var response = await Mediator.Send(input);
+
+        if (response.Success)
+        {
+            SetSuccessMessage("The theme has been set as active successfully.");
         }
         else
         {
-            var input = new SetAsActiveTheme.Command
-            {
-                Id = id,
-                MatchedWebTemplateDeveloperNames = null,
-            };
-
-            var response = await Mediator.Send(input);
-
-            if (response.Success)
-            {
-                SetSuccessMessage("Set as the active theme in progress.");
-
-                return RedirectToAction(nameof(BackgroundTaskStatus), new { id = response.Result });
-            }
-            else
-            {
-                SetErrorMessage("An error occurred when setting the theme as active. See the error below.", response.GetErrors());
-
-                return RedirectToAction(nameof(Edit), new { id });
-            }
+            SetErrorMessage("An error occurred when setting the theme as active. See the error below.", response.GetErrors());
         }
+
+        return RedirectToAction(nameof(Edit), new { id });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Route($"{RAYTHA_ROUTE_PREFIX}/themes/set-as-active-theme/web-template-matching/{{id}}", Name = "themesmatchingwebtemplates")]
-    public async Task<IActionResult> SetAsActiveTheme(string id, ThemesMatchingWebTemplates_ViewModel model)
+    [Route($"{RAYTHA_ROUTE_PREFIX}/themes/set-as-active-theme/{{id}}/matching-web-templates", Name = "themesmatchingwebtemplates")]
+    public async Task<IActionResult> BeginMatchingWebTemplates(string id, ThemesMatchingWebTemplates_ViewModel model)
     {
-        var input = new SetAsActiveTheme.Command
+        var input = new BeginMatchWebTemplates.Command
         {
             Id = id,
             MatchedWebTemplateDeveloperNames = model.WebTemplateMappings,
@@ -251,47 +305,15 @@ public class ThemesController : BaseController
         }
     }
 
-    [Route($"{RAYTHA_ROUTE_PREFIX}/themes/set-as-active-theme/web-template-matching/{{id}}", Name = "themesmatchingwebtemplates")]
-    public async Task<IActionResult> MatchingWebTemplates(string id)
-    {
-        var webTemplatesWithoutMappingsResponse = await Mediator.Send(new GetWebTemplatesWithoutMappings.Query
-        {
-            ThemeId = id,
-        });
-
-        var newActiveThemeWebTemplatesResponse = await Mediator.Send(new GetWebTemplates.Query
-        {
-            ThemeId = id,
-            OrderBy = $"DeveloperName {SortOrder.ASCENDING}",
-        });
-
-        var model = new ThemesMatchingWebTemplates_ViewModel
-        {
-            ActiveThemeWebTemplates = webTemplatesWithoutMappingsResponse.Result,
-            NewActiveThemeWebTemplates = newActiveThemeWebTemplatesResponse.Result.Items,
-        };
-
-        foreach (var template in model.ActiveThemeWebTemplates)
-        {
-            var webTemplateDeveloperNameMatched = model.NewActiveThemeWebTemplates.Any(wt => wt.DeveloperName == template.DeveloperName);
-
-            model.WebTemplateMappings[template.DeveloperName] = webTemplateDeveloperNameMatched
-                ? template.DeveloperName
-                : string.Empty;
-        }
-
-        return View(model);
-    }
-
-    [Route($"{RAYTHA_ROUTE_PREFIX}/themes/edit/{{id}}/export", Name = "themesexporttourl")]
-    public async Task<IActionResult> BeginExportToUrl(string id)
+    [Route($"{RAYTHA_ROUTE_PREFIX}/themes/edit/{{id}}/export", Name = "themesexport")]
+    public async Task<IActionResult> Export(string id)
     {
         var response = await Mediator.Send(new GetThemeById.Query
         {
             Id = id,
         });
 
-        return View(new ThemesBeginExportToUrl_ViewModel
+        return View(new ThemesExport_ViewModel
         {
             Id = id,
             IsExportable = response.Result.IsExportable,
@@ -301,10 +323,10 @@ public class ThemesController : BaseController
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Route($"{RAYTHA_ROUTE_PREFIX}/themes/edit/{{id}}/export", Name = "themesexporttourl")]
-    public async Task<IActionResult> BeginExportToUrl(ThemesBeginExportToUrl_ViewModel model, string id)
+    [Route($"{RAYTHA_ROUTE_PREFIX}/themes/edit/{{id}}/export", Name = "themesexport")]
+    public async Task<IActionResult> Export(ThemesExport_ViewModel model, string id)
     {
-        var input = new EditThemeForExport.Command
+        var input = new ToggleThemeExportability.Command
         {
             Id = id,
             IsExportable = model.IsExportable,
@@ -313,23 +335,23 @@ public class ThemesController : BaseController
         var response = await Mediator.Send(input);
 
         if (response.Success)
-            SetSuccessMessage($"The current theme {(model.IsExportable ? "can" : "cannot")} be exported");
+            SetSuccessMessage($"The current theme export {(model.IsExportable ? "enabled" : "disabled ")}");
         else
             SetErrorMessage("An error occurred while saving. See the error below.", response.GetErrors());
 
-        return RedirectToAction(nameof(BeginExportToUrl), new { id });
+        return RedirectToAction(nameof(Export), new { id });
     }
 
     [Route($"{RAYTHA_ROUTE_PREFIX}/themes/import/", Name = "themesimportfromurl")]
-    public async Task<IActionResult> BeginImportFromUrl()
+    public IActionResult ImportFromUrl()
     {
-        return View(new ThemesBeginImportFromUrl_ViewModel());
+        return View(new ThemesImportFromUrl_ViewModel());
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Route($"{RAYTHA_ROUTE_PREFIX}/themes/import/", Name = "themesimportfromurl")]
-    public async Task<IActionResult> BeginImportFromUrl(ThemesBeginImportFromUrl_ViewModel model, string url)
+    public async Task<IActionResult> ImportFromUrl(ThemesImportFromUrl_ViewModel model, string url)
     {
         var input = new BeginImportThemeFromUrl.Command
         {
@@ -355,7 +377,6 @@ public class ThemesController : BaseController
         }
     }
 
-    [Authorize(Policy = BuiltInContentTypePermission.CONTENT_TYPE_READ_PERMISSION)]
     [Route($"{RAYTHA_ROUTE_PREFIX}/themes/background-task/status/{{id}}", Name = "themesbackgroundtaskstatus")]
     public async Task<IActionResult> BackgroundTaskStatus(string id, bool json = false)
     {
@@ -394,7 +415,7 @@ public class ThemesController : BaseController
         }
         else
         {
-            return StatusCode(StatusCodes.Status403Forbidden, response.Error);
+            return StatusCode(StatusCodes.Status400BadRequest, response.Error);
         }
     }
 
@@ -616,7 +637,6 @@ public class ThemesController : BaseController
         var input = new EditWebTemplate.Command
         {
             Id = id,
-            ThemeId = themeId,
             Label = model.Label,
             Content = model.Content,
             ParentTemplateId = model.ParentTemplateId,
@@ -679,7 +699,6 @@ public class ThemesController : BaseController
         var input = new DeleteWebTemplate.Command
         {
             Id = id,
-            ThemeId = themeId,
         };
 
         var response = await Mediator.Send(input);

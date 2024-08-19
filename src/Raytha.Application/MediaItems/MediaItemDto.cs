@@ -12,15 +12,13 @@ public record MediaItemDto : BaseAuditableEntityDto
     public string FileStorageProvider { get; init; }
     public string ObjectKey { get; init; }
 
-    public static Expression<Func<MediaItem?, MediaItemDto?>> GetProjection()
+    public static Expression<Func<MediaItem, MediaItemDto>> GetProjection()
     {
         return entity => GetProjection(entity);
     }
-    public static MediaItemDto? GetProjection(MediaItem? entity)
-    {
-        if (entity == null)
-            return null;
 
+    public static MediaItemDto GetProjection(MediaItem entity)
+    {
         return new MediaItemDto
         {
             Id = entity.Id,

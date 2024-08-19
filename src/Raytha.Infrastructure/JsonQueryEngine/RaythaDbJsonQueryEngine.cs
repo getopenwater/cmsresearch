@@ -554,7 +554,7 @@ public class RaythaDbJsonQueryEngine : IRaythaDbJsonQueryEngine
                 var relatedItem = relatedContentItems.FirstOrDefault(p => p.Id == relatedItemFieldValue.Value);
                 if (relatedItem != null)
                 {
-                    contentAsAssembled.Add(keyValue.Key, ContentItemDto.GetProjection(relatedItem, null));
+                    contentAsAssembled.Add(keyValue.Key, ContentItemDto.GetProjection(relatedItem));
                 }
                 else
                 {

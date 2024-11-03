@@ -1,0 +1,48 @@
+﻿<div class="modal fade" id="insertImageModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Insert image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-underline nav-fill" id="imageTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="url-tab" data-bs-toggle="tab" data-bs-target="#url"
+                            type="button" role="tab" aria-controls="url" aria-selected="true">
+                            URL
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload"
+                            type="button" role="tab" aria-controls="upload" aria-selected="false">
+                            Upload
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="imageTabContent">
+                    <div class="tab-pane fade show active" id="url" role="tabpanel" aria-labelledby="url-tab">
+                        <form data-action="submit->{{controllerIdentifier}}#insertImageByUrl">
+                            <div class="form-floating mb-3 mt-3">
+                                <input type="url" class="form-control" id="imageUrlInput" name="imageUrl" required>
+                                <label for="imageUrlInput">Image URL</label>
+                            </div>
+                            <div class="form-floating mb-3 mt-3">
+                                <input type="text" class="form-control" id="imageAltTextInput" name="imageAltText">
+                                <label for="imageAltTextInput">Alternative description</label>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary">Insert Image</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="tab-pane fade" id="upload" role="tabpanel" aria-labelledby="upload-tab">
+                        <div class="form-floating mb-3 mt-3">
+                            <div data-{{controllerIdentifier}}-target="uppyDashboardContainer"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

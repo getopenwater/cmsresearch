@@ -1,0 +1,55 @@
+<div class="card position-absolute" id="searchReplaceModal">
+    <div class="card-header p-1" id="modalHeader">
+        <div class="d-flex justify-content-between align-items-center">
+            <span>Search and replace</span>
+            <button type="button" class="btn-close" aria-label="Close"
+                data-action="click->{{controllerIdentifier}}#toggleSearchAndReplaceDialog"></button>
+        </div>
+    </div>
+    <div class="card-body p-1">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item p-1">
+                <label for="searchText" class="form-label">Search</label>
+                <input type="text" class="form-control" data-action="change->{{controllerIdentifier}}#setSearchTerm">
+            </li>
+            <li class="list-group-item p-1">
+                <label for="searchText" class="form-label">Replace</label>
+                <input type="text" class="form-control" data-action="change->{{controllerIdentifier}}#setReplaceTerm">
+            </li>
+            <li class="list-group-item p-1">
+                <div class="form-check">
+                    <input class="form-check-input shadow-none" type="checkbox" value="" id="flexCheckDefault"
+                        data-action="change->{{controllerIdentifier}}#setCaseSensitive">
+                    <label class="form-check-label" for="flexCheckDefault">
+                        Match case
+                    </label>
+                </div>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-start p-1">
+                <div class="btn-group btn-group-sm" role="group">
+                    <button class="btn btn-outline-primary p-1 shadow-none icon-arrow-left-short" type="button"
+                        data-action="click->{{controllerIdentifier}}#executeCommand"
+                        data-{{controllerIdentifier}}-command-param="previousSearchResult">
+                    </button>
+                    <button class="btn btn-outline-primary p-1 shadow-none icon-arrow-right-short" type="button"
+                        data-action="click->{{controllerIdentifier}}#executeCommand"
+                        data-{{controllerIdentifier}}-command-param="nextSearchResult">
+                    </button>
+                </div>
+                <div class="d-flex justify-content-end align-content-end mx-1">
+                    <span id="searchResultIndex">0</span>
+                    /
+                    <span id="searchResultTotal">0</span>
+                </div>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary p-1 shadow-none btn-sm"
+                        data-action="click->{{controllerIdentifier}}#executeCommand"
+                        data-{{controllerIdentifier}}-command-param="replace">Replace</button>
+                    <button type="button" class="btn btn-outline-primary p-1 shadow-none btn-sm"
+                        data-action="click->{{controllerIdentifier}}#executeCommand"
+                        data-{{controllerIdentifier}}-command-param="replaceAll">Replace all</button>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>

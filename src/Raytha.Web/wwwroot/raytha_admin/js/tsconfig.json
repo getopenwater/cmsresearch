@@ -1,0 +1,38 @@
+{
+  "compilerOnSave": true,
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "noFallthroughCasesInSwitch": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false,
+    "noUnusedLocals": false,
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "removeComments": true,
+    "outDir": "dist",
+    "declarationDir": "dist/types",
+    "declaration": true,
+    "target": "ES5",
+    "allowJs": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "lib": [
+      "ES2021.String",
+      "dom"
+    ],
+    "strict": true,
+    "moduleResolution": "Node",
+    "strictPropertyInitialization": false,
+    "baseUrl": "./src",
+    "paths": {
+      "wysiwyg/*": [ "wysiwyg/*" ]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

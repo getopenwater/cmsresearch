@@ -1,0 +1,207 @@
+﻿<div class="row">
+    <div class="row">
+        <div class="col-auto">
+            <div id="toolbarButtons" class="btn-toolbar mt-1 toolbarButtons" role="toolbar">
+                <div class="btn-group btn-group-sm me-2" id="undoRedoButtons" role="group">
+                    <button type="button" class="btn btn-outline-primary icon-undo btn-icon-only p-0 shadow-none"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Undo"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="undo">
+                    </button>
+                    <button type="button" class="btn btn-outline-primary icon-redo btn-icon-only p-0 shadow-none"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Redo"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="redo">
+                    </button>
+                </div>
+                <div class="btn-group btn-group-sm me-2" id="clearFormattingButton" role="group">
+                    <button type="button" class="btn btn-outline-primary icon-clear-formatting btn-icon-only p-0"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Clear formatting"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="clearFormatting">
+                    </button>
+                </div>
+                <div class="btn-group btn-group-sm me-2" id="markButtons" role="group">
+                    <button id="boldButton" type="button" class="btn btn-outline-primary icon-bold btn-icon-only p-0 shadow-none"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Bold"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleBold">
+                    </button>
+                    <button id="italicButton" type="button"
+                            class="btn btn-outline-primary icon-italic btn-icon-only p-0 shadow-none" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" data-bs-title="Italic"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleItalic">
+                    </button>
+                    <button id="underlineButton" type="button"
+                            class="btn btn-outline-primary icon-underline btn-icon-only p-0 shadow-none" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" data-bs-title="Underline"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleUnderline">
+                    </button>
+                    <button id="strikeButton" type="button"
+                            class="btn btn-outline-primary icon-strike btn-icon-only p-0 shadow-none" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" data-bs-title="Strike"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleStrike">
+                    </button>
+                    <button id="superscriptButton" type="button"
+                            class="btn btn-outline-primary icon-superscript btn-icon-only p-0 shadow-none" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" data-bs-title="Superscript"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleSuperscript">
+                    </button>
+                    <button id="subscriptButton" type="button"
+                            class="btn btn-outline-primary icon-subscript btn-icon-only p-0 shadow-none" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" data-bs-title="Subscript"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleSubscript">
+                    </button>
+                    <button id="codeButton" type="button" class="btn btn-outline-primary icon-code btn-icon-only p-0 shadow-none"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Code"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleCode">
+                    </button>
+                </div>
+                <div class="dropdown me-2" data-dropdown-role="fontFamily">
+                    <button class="btn btn-outline-primary icon-dropdown-toggle shadow-none p-2" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="text-nowrap me-1" id="fontFamilySpan">Font family</span>
+                    </button>
+                </div>
+                <div class="dropdown me-2" data-dropdown-role="font-size">
+                    <button class="btn btn-outline-primary icon-dropdown-toggle shadow-none px-1" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="text-nowrap me-1" id="fontSizeSpan">Font size</span>
+                    </button>
+                </div>
+                <div class="dropdown me-2" data-dropdown-role="format">
+                    <button class="btn btn-outline-primary rounded shadow-none px-1 icon-dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="text-nowrap me-1" id="formatSpan">Paragraph</span>
+                    </button>
+                </div>
+                <div class="btn-group btn-group-sm me-2" data-bs-toggle="tooltip" data-bs-placement="right"
+                     data-bs-title="Text align">
+                    <div class="dropdown dropdown-center" data-dropdown-role="text-align">
+                        <button class="btn btn-outline-primary rounded shadow-none px-1 icon-dropdown-toggle icon-text-align-left"
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false" id="textAlignButton">
+                        </button>
+                    </div>
+                </div>
+                <div class="btn-group btn-group-sm dropdown dropdown-center me-2" data-bs-toggle="tooltip"
+                     data-bs-placement="right" data-bs-title="Bullet list">
+                    <button id="bulletListButton" class="btn btn-outline-primary rounded-start btn-icon-only icon-bullet-list p-0 shadow-none"
+                            type="button"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleBulletList">
+                    </button>
+                    <button type="button" class="btn  btn-outline-primary rounded-end icon-dropdown-toggle shadow-none p-0"
+                            data-bs-toggle="dropdown" aria-expanded="false"></button>
+                    <div class="dropdown-menu width-fit-content">
+                        <div class="d-flex flex-column">
+                            <div class="dropdown-item d-flex px-2 py-1" type="button"
+                                 data-action="click->{{controllerIdentifier}}#executeCommand"
+                                 data-{{controllerIdentifier}}-command-param="toggleBulletList">
+                                <div class="d-flex icon-bullet-list me-1"></div>
+                                <div class="flex-grow-1">Default</div>
+                                <div class="d-flex icon-check" data-role="check-place"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="btn-group btn-group-sm dropdown dropdown-center me-2" data-bs-toggle="tooltip"
+                     data-bs-placement="right" data-bs-title="Ordered list">
+                    <button id="orderedListButton" class="btn btn-outline-primary rounded-start btn-icon-only p-0 icon-ordered-list shadow-none"
+                            type="button"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleOrderedList">
+                    </button>
+                    <button type="button" class="btn rounded-end btn-outline-primary icon-dropdown-toggle p-0 shadow-none"
+                            data-bs-toggle="dropdown" aria-expanded="false"></button>
+                    <div class="dropdown-menu width-fit-content">
+                        <div class="d-flex flex-column">
+                            <div class="dropdown-item d-flex px-2 py-1" type="button"
+                                 data-action="click->{{controllerIdentifier}}#executeCommand"
+                                 data-{{controllerIdentifier}}-command-param="toggleOrderedList">
+                                <div class="d-flex icon-ordered-list me-1"></div>
+                                <div class="flex-fill">Default</div>
+                                <div class="d-flex icon-check" data-role="check-place"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="btn-group btn-group-sm me-2" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-icon-only icon-link p-0 shadow-none"
+                            data-tooltip="tooltip" data-bs-placement="bottom" data-bs-title="Link" data-bs-toggle="modal"
+                            data-bs-target="#insertLinkModal"></button>
+                    <button type="button" class="btn btn-outline-primary btn-icon-only icon-image p-0 shadow-none"
+                            data-tooltip="tooltip" data-bs-placement="bottom" data-bs-title="Image" data-bs-toggle="modal"
+                            data-bs-target="#insertImageModal">
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-icon-only icon-video p-0 shadow-none"
+                            data-tooltip="tooltip" data-bs-placement="bottom" data-bs-title="Video"
+                            data-bs-toggle="modal" data-bs-target="#insertVideoModal"></button>
+                </div>
+                <div class="btn-group btn-group-sm me-2" id="indentButtons" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-icon-only icon-indent p-0 shadow-none"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Indent"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="addIndent">
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-icon-only icon-outdent p-0 shadow-none"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Outdent"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="removeIndent">
+                    </button>
+                </div>
+                <div class="btn-group btn-group-sm me-2" id="nodeButtons" role="group">
+                    <button id="blockquoteButton" type="button" class="btn btn-outline-primary btn-icon-only icon-blockquote  p-0 shadow-none"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Blockquote"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleBlockquote">
+                    </button>
+                    <button id="codeBlockButton" type="button" class="btn btn-outline-primary btn-icon-only icon-code-block p-0 shadow-none"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Code block"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleCodeBlock">
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-icon-only icon-horizontal-rule p-0 shadow-none"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Horizontal rule"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="insertHorizontalRule">
+                    </button>
+                </div>
+                <div class="btn-group btn-group-sm dropdown dropdown-center me-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                     data-bs-title="Table" data-dropdown-role="table">
+                    <button type="button" class="btn btn-outline-primary btn-icon-only icon-table p-0 shadow-none rounded"
+                            data-bs-toggle="dropdown" aria-expanded="false"></button>
+                </div>
+                <div class="btn-group btn-group-sm" id="showMoreButtons" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-icon-only icon-three-dots p-0 shadow-none"
+                            data-bs-toggle="collapse" data-bs-target="#collapseMenu"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row collapse mt-2" id="collapseMenu">
+        <div class="col-12">
+            <div class="btn-toolbar " role="toolbar" id="collapseToolbarButtons">
+                <div class="btn-group btn-group-sm me-2" id="ShowButtons" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-icon-only icon-invisible-characters p-0 shadow-none"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Invisible characters"
+                            data-action="click->{{controllerIdentifier}}#executeCommand"
+                            data-{{controllerIdentifier}}-command-param="toggleInvisibleCharacters"
+                            data-command="invisibleCharacters">
+                    </button>
+                </div>
+                <div class="btn-group btn-group-sm me-2">
+                    <button type="button" class="btn btn-outline-primary btn-icon-only icon-search p-0 shadow-none"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Search and replace"
+                            data-action="click->{{controllerIdentifier}}#toggleSearchAndReplaceDialog">
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

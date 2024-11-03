@@ -12,22 +12,44 @@ module.exports = (env, argv) =>
             filename: "main.js",
             path: path.resolve(__dirname, "dist"),
         },
+        resolve: {
+            extensions: ['.ts', '.js'],
+            alias: {
+                'wysiwyg': path.resolve(__dirname, 'src/wysiwyg')
+            }
+        },
         module:
         {
             rules: [
-            {
-                test: /\.m?js$/,
-                exclude: /(node_modules|bower_components)/,
-                use:
-                    {
-                        loader: "babel-loader",
-                        options:
+                {
+                    test: /\.(ts)$/,
+                    exclude: /node_modules/,
+                    use: [
                         {
+                            loader: "babel-loader",
+                            options: {
+                                presets: [
+                                    "@babel/preset-env",
+                                    "@babel/preset-typescript"
+                                ],
+                                plugins: [
+                                    "@babel/plugin-transform-typescript"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    test: /\.m?js$/,
+                    exclude: /node_modules/,
+                    use: {
+                        loader: "babel-loader",
+                        options: {
                             presets: [
-                                ["@babel/preset-env", { shippedProposals: true }]
-                            ],
-                        },
-                    },
+                                ["@babel/preset-env", { targets: "defaults" }]
+                            ]
+                        }
+                    }
                 },
                 {
                     test: /\.css$/,
@@ -36,7 +58,14 @@ module.exports = (env, argv) =>
                 {
                     test: /\.ttf$/,
                     use: ['file-loader']
-                }
+                },
+               {
+                  test: /\.html$/,
+                  loader: 'html-loader',
+                  options: {
+                     minimize: true,
+                  }
+               },
             ],
         },
         plugins: [new MonacoWebpackPlugin({

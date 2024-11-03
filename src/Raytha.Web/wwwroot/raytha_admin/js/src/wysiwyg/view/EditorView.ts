@@ -14,7 +14,6 @@ import { Dropdown, Tooltip } from "bootstrap";
 import { TableBubbleMenu } from "wysiwyg/view/components/bubbleMenus/TableBubbleMenu"
 import { PreviewModal } from "wysiwyg/view/components/modals/PreviewModal";
 import { SearchAndReplaceDialog } from "wysiwyg/view/components/dialogs/SearchAndReplaceDialog";
-import { ListBubbleMenu } from "wysiwyg/view/components/bubbleMenus/ListBubbleMenu";
 
 export class EditorView implements IEditorView {
    public readonly editorContainer: EditorContainer;
@@ -88,10 +87,6 @@ export class EditorView implements IEditorView {
 
    public getTableBubbleMenuElement(): HTMLElement {
       return new TableBubbleMenu(this.container, this.controllerIdentifier).getBubbleMenu();
-   }
-
-   public getListBubbleMenuElement(): HTMLElement {
-      return new ListBubbleMenu(this.container, this.controllerIdentifier).getBubbleMenu();
    }
 
    public toggleSearchAndReplace(): void {

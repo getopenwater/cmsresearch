@@ -25,7 +25,7 @@ export default class extends Controller {
    connect() {
       this.editorView = new EditorView(this.editorContainerTarget, this.identifier);
       this.editorModel = new EditorModel(
-         this.editorView.getTableBubbleMenuElement(),
+         this.editorView.getTableBubbleMenuElement()
       );
 
       this.editorView.appendEditor(this.editorModel.editor.options.element);

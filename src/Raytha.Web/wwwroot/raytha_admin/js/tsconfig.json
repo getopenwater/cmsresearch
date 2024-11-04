@@ -13,6 +13,7 @@
     "declarationDir": "dist/types",
     "declaration": true,
     "target": "ES5",
+    "module": "ES2015",
     "allowJs": true,
     "isolatedModules": true,
     "skipLibCheck": true,

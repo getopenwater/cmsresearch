@@ -1064,6 +1064,19 @@ GO
 ALTER TABLE [WebTemplates] ADD CONSTRAINT [FK_WebTemplates_Themes_ThemeId] FOREIGN KEY ([ThemeId]) REFERENCES [Themes] ([Id]) ON DELETE CASCADE;
 GO
 
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+GO
+
+
+                UPDATE ContentTypeFields
+                SET FieldType = 'wysiwyg'
+                WHERE FieldType = 'long_text';
+            
+GO
+
 INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
 VALUES 
 ('20221230221303_v0_9_0', 'FreshCreateOnLatestVersion'), 
@@ -1071,6 +1084,7 @@ VALUES
 ('20230521175706_v1_1_0', 'FreshCreateOnLatestVersion'), 
 ('20240314124844_v1_2_0', 'FreshCreateOnLatestVersion'), 
 ('20240502121207_v1_3_0', 'FreshCreateOnLatestVersion');
+('20241102184009_v1_4_0', "FreshCreateOnLatestVersion");
 GO
 
 COMMIT;
